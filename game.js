@@ -69,6 +69,7 @@
   let kawazuGhosts=[];
   let siltClouds = [];
   let webTraps = [];
+  let ceilingWebs = [];
   let catfishCharges = [];
   let pressureBlades = [];
   let burstWaves = [];
@@ -786,6 +787,9 @@
       this.piranhaBiteHits=0;
       this.webbedT=0;
       this.webMash=0;
+      this.suspendedT=0;
+      this.suspendedX=0;
+      this.suspendedY=0;
       this.piranhaDivePhase=0;
       this.piranhaDiveTargetX=0;
       this.crayfishRushStep=0;
@@ -819,6 +823,11 @@
         this.stun=Math.max(this.stun,.10);
         this.vx*=Math.pow(.08,dt); this.vy*=Math.pow(.08,dt);
         if(this.webbedT<=0)this.webMash=0;
+      }
+      if(this.suspendedT>0){
+        this.suspendedT=Math.max(0,this.suspendedT-dt);
+        this.vx=0; this.vy=0;
+        this.x=this.suspendedX; this.y=this.suspendedY;
       }
       if(this.healT>0){ this.healT=Math.max(0,this.healT-dt); }
       if(this.counterT>0){
@@ -945,17 +954,6 @@
       }
 
 
-      if(this.type==='crayfish' && this.crayfishCounterT>0){
-        this.crayfishCounterT-=dt;
-        if(this.crayfishCounterT<=0){
-          this.crayfishCounterT=0;
-          this.crayfishCounterReady=false;
-          if(this.specialType==='crayfishCounter'){
-            this.specialType=null;
-            this.specialT=0;
-          }
-        }
-      }
 
       // ベリアルさん：多脚ラッシュ
       // 土煙の中でも上下だけ少し相手へ自動追尾する。
@@ -1240,12 +1238,12 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          ctx.strokeStyle='#f3d72d';ctx.lineWidth=8;ctx.lineCap='round';
-          ctx.beginPath();
-          ctx.moveTo(43,-7);ctx.lineTo(61,-19+bite*9);ctx.lineTo(72,-7);
-          ctx.moveTo(43,9);ctx.lineTo(61,21-bite*9);ctx.lineTo(72,9);ctx.stroke();
-          ctx.strokeStyle='rgba(255,244,100,.55)';ctx.lineWidth=3;
-          ctx.beginPath();ctx.arc(58,1,25,0,Math.PI*2);ctx.stroke();
+          const reach=18+14*(1-bite);
+          ctx.lineCap='round';
+          ctx.strokeStyle='rgba(243,215,45,.45)';ctx.lineWidth=7;
+          ctx.beginPath();ctx.moveTo(43,-2);ctx.quadraticCurveTo(59+reach,-6,77+reach,-2);ctx.quadraticCurveTo(64+reach,1,52,1);ctx.stroke();
+          ctx.strokeStyle='#f3d72d';ctx.lineWidth=9;
+          ctx.beginPath();ctx.moveTo(43,4);ctx.quadraticCurveTo(60+reach,9,79+reach,4);ctx.quadraticCurveTo(65+reach,0,52,0);ctx.stroke();
         }
 
         ctx.restore();
@@ -1309,7 +1307,7 @@
           ctx.moveTo(18,0);ctx.lineTo(58,45);ctx.moveTo(-18,0);ctx.lineTo(-58,45);ctx.stroke();
         }
 
-        if(this.attack==='punch'){
+        if(this.attack==='crayfishHammer'){
           const jab=16+Math.sin(performance.now()/42)*5;
           ctx.strokeStyle='#2f2338';ctx.lineWidth=10;ctx.lineCap='round';
           ctx.beginPath();
@@ -1320,7 +1318,7 @@
           ctx.beginPath();ctx.moveTo(70+jab,-5);ctx.lineTo(88+jab,-7);ctx.stroke();
         }
 
-        if(this.attack==='kick'){
+        if(this.attack==='crayfishUpper'){
           const kick=18+Math.sin(performance.now()/48)*4;
           ctx.strokeStyle='#2f2338';ctx.lineWidth=11;ctx.lineCap='round';
           ctx.beginPath();
@@ -2226,7 +2224,7 @@
     }));
 
     particles=[]; hitRings=[]; guardWaves=[]; aquaTornadoes=[]; aquaVortices=[];
-    siltClouds=[]; webTraps=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
+    siltClouds=[]; webTraps=[]; ceilingWebs=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
 
     for(let i=0;i<12;i++){
       spawnLeafTarget(i,true);
@@ -2563,7 +2561,7 @@
       crayfish:[
         'パンチ×3：多脚ラッシュ',
         '↑ ↓ ＋ キック：ウェブトラップ',
-        '↓ ＋ ガード×2：ウェブ・カウンター'
+        '↓ ↑ ＋ パンチ：セイリング・ウェブ'
       ],
       beelzebub:[
         '舌：通常の約1.5倍リーチ＋軽い上下追尾',
@@ -2610,7 +2608,7 @@
 
   function resetBattleEffects(){
     particles=[]; hitRings=[]; guardWaves=[]; aquaTornadoes=[]; aquaVortices=[];
-    siltClouds=[]; webTraps=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
+    siltClouds=[]; webTraps=[]; ceilingWebs=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
     leafTargets=[]; guardTargets=[]; toxicWaters=[]; bossFish=[]; abyssShocks=[]; kawazuShots=[]; kawazuGhosts=[];
   }
 
@@ -3341,6 +3339,18 @@
     return true;
   }
 
+  function specialBelialCeilingWeb(f){
+    if(gameOver || !f || f.stun>0 || f.specialT>0) return false;
+    const other=f.isPlayer?enemy:player;
+    if(!other) return false;
+    f.specialType='belialCeilingWeb';
+    f.specialT=.72; f.attack='punch'; f.attackT=.72;
+    ceilingWebs.push({owner:f,target:other,phase:'up',x:f.x,y:f.y-20,targetX:other.x,t:1.35,life:1.35,hit:false});
+    comboEl.textContent='セイリング・ウェブ!';
+    setTimeout(()=>{if(comboEl.textContent==='セイリング・ウェブ!')comboEl.textContent='';},800);
+    return true;
+  }
+
   function executeCrayfishBottomSmash(f){
     if(gameOver || !f) return false;
     const other=f.isPlayer?enemy:player;
@@ -3700,10 +3710,13 @@
     }
 
     if(f.type==='crayfish'){
-      // 地上版ベリアル：網技は縦画面でも入力しやすい ↑ ↓ ＋キック。
       if(kind==='kick' && hasCommand(['up','down'],850)){
         clearCommand();
         return specialCrayfishBottomSmash(f);
+      }
+      if(kind==='punch' && hasCommand(['down','up'],850)){
+        clearCommand();
+        return specialBelialCeilingWeb(f);
       }
     }
 
@@ -3996,26 +4009,6 @@
     if(attacker && !attacker.isPlayer && target && target.isPlayer){
       dmg*=difficultyProfile().damage;
     }
-    // アスモデウスさんのクロー・カウンター：
-    // 近距離打撃だけ無効化。飛び道具は普通に受ける。
-    if(target && target.type==='crayfish' && target.crayfishCounterReady && attacker){
-      const projectileLike =
-        attacker._projectileHit===true ||
-        attacker.specialType==='pressureBlade' ||
-        attacker.specialType==='aquaTornado' ||
-        attacker.specialType==='aquaStream' ||
-        attacker.specialType==='aquaVortex';
-
-      const closeEnough=Math.hypot(attacker.x-target.x,attacker.y-target.y)<135;
-
-      if(!projectileLike && closeEnough){
-        triggerCrayfishCounter(target,attacker);
-        spawnImpact(target.x,target.y,'guard');
-        playSfx('guard');
-        return;
-      }
-    }
-
     if(gameOver) return;
 
     // ウリエルさんのカウンター構え：打撃を無効化して白オーラ拳で反撃。
@@ -4182,23 +4175,6 @@
             }
           }
 
-          // アスモデウスさん：下＋ガード×2で近距離カウンター構え
-          if(player.type==='crayfish' && !player.throwState){
-            const now=performance.now();
-            const downNow=input.y>.35;
-            input._crayGuardTimes=(input._crayGuardTimes||[]).filter(t=>now-t<760);
-
-            if(downNow){
-              input._crayGuardTimes.push(now);
-              if(input._crayGuardTimes.length>=2){
-                input._crayGuardTimes=[];
-                if(specialCrayfishCounter(player)){
-                  btn.classList.remove('pressed');
-                  return;
-                }
-              }
-            }
-          }
 
           // ラファエルさん：地上版は「上＋ガード」で即エアブースト。
           // 縦画面では1回転入力の余裕が少ないため、空中機動を主力として簡略化。
@@ -5116,6 +5092,29 @@ function drawBackground(dt){
     burstWaves.forEach(b=>{b.t-=dt;});
       burstWaves=burstWaves.filter(b=>b.t>0);
 
+    ceilingWebs.forEach(w=>{
+        w.t-=dt;
+        const target=w.target;
+        if(!target)return;
+        if(w.phase==='up'){
+          w.y-=760*dt;
+          w.x+=(w.targetX-w.x)*Math.min(1,dt*7);
+          if(w.y<=22){w.y=22;w.phase='drop';w.x=target.x;}
+        }else{
+          w.x+=(target.x-w.x)*Math.min(1,dt*9);
+          w.y+=700*dt;
+          if(!w.hit && w.y>=target.y-34){
+            w.hit=true;
+            target.suspendedT=3.0;
+            target.suspendedX=target.x;
+            target.suspendedY=Math.max(100,target.y-18);
+            target.vx=0;target.vy=0;
+            spawnImpact(target.x,target.y,'guard');
+          }
+        }
+      });
+      ceilingWebs=ceilingWebs.filter(w=>w.t>0&&!w.hit);
+
     webTraps.forEach(w=>{
         w.t-=dt; w.x+=w.vx*dt; w.y+=w.vy*dt;
         const target=w.owner.isPlayer?enemy:player;
@@ -5531,6 +5530,19 @@ function drawBackground(dt){
     });
 
     // 水底の土煙も描画フェーズへ移動
+    ceilingWebs.forEach(w=>{
+      ctx.save();ctx.strokeStyle='rgba(250,253,250,.96)';ctx.lineWidth=3;ctx.beginPath();
+      if(w.phase==='up'){ctx.moveTo(w.owner.x,w.owner.y-12);ctx.lineTo(w.x,w.y);}
+      else{ctx.moveTo(w.x,0);ctx.lineTo(w.x,w.y);}
+      ctx.stroke();ctx.restore();
+    });
+    [player,enemy].forEach(f=>{
+      if(!f||f.suspendedT<=0)return;
+      ctx.save();ctx.strokeStyle='rgba(250,253,250,.96)';ctx.lineWidth=3.5;
+      ctx.beginPath();ctx.moveTo(f.x,0);ctx.lineTo(f.x,f.y-32);ctx.stroke();
+      ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(f.x,f.y,42,30,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+    });
+
     webTraps.forEach(w=>{
       ctx.save();ctx.translate(w.x,w.y);ctx.strokeStyle='rgba(248,252,248,.95)';ctx.lineWidth=2;
       for(let r=7;r<=28;r+=7){ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();}
