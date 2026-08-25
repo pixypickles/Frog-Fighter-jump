@@ -331,7 +331,7 @@
     ],
     crayfish:[
       '多脚ラッシュ：パンチ ×3',
-      'ウェブスマッシュ：← ↓ ＋ キック',
+      'ウェブスマッシュ：↑ ↓ ＋ キック',
       'ウェブ・カウンター：↓ ＋ ガード ×2'
     ],
     beelzebub:[
@@ -1177,7 +1177,7 @@
       }
 
 
-      // トンボ：アザゼルさん。通常時は空中に浮遊。
+      // トンボ：アザゼルさん。オニヤンマを意識した黒＋黄の大型トンボ。
       if(this.type==='piranha'){
         if(this.face<0) ctx.scale(-1,1);
         if((this.specialType==='piranhaDivePunch'||this.specialType==='piranhaDiveKick') && this.piranhaDivePhase>=2){
@@ -1189,40 +1189,53 @@
         }
         if(this.flash>0) ctx.globalAlpha=.55;
 
-        // 羽ばたき。左右2対の細長い羽。
-        const flap=Math.sin(performance.now()/42)*.16;
-        ctx.fillStyle='rgba(190,235,245,.72)';
-        ctx.beginPath();ctx.ellipse(-8,-5,42,10,-.48+flap,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.ellipse(-8,8,42,10,.48-flap,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.ellipse(7,-5,38,9,.48-flap,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.ellipse(7,8,38,9,-.48+flap,0,Math.PI*2);ctx.fill();
+        const flap=Math.sin(performance.now()/42)*.14;
+        ctx.fillStyle='rgba(180,225,238,.62)';
+        ctx.beginPath();ctx.ellipse(-3,-8,45,10,-.50+flap,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(-5,7,45,10,.48-flap,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(8,-7,39,9,.42-flap,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(8,8,39,9,-.42+flap,0,Math.PI*2);ctx.fill();
 
-        // 長い腹部と胸部
-        ctx.fillStyle='#3a8d61';
-        ctx.beginPath();ctx.ellipse(-24,8,35,10,0,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#57b978';
-        ctx.beginPath();ctx.ellipse(4,6,18,17,0,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#2b7251';
-        for(let i=0;i<4;i++){ctx.fillRect(-50+i*12,2,3,12);}
+        ctx.fillStyle='#171717';
+        ctx.beginPath();ctx.ellipse(7,5,21,18,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#f2d928';
+        ctx.fillRect(-5,-9,6,27);
+        ctx.fillRect(8,-11,7,30);
 
-        // 頭と大きな複眼
-        ctx.fillStyle='#68c98b';ctx.beginPath();ctx.arc(28,3,18,0,Math.PI*2);ctx.fill();
-        const hurt=this.hurtFaceT>0||this.throwState;
-        ctx.fillStyle=hurt?'#612d35':'#8d1f4d';
-        ctx.beginPath();ctx.ellipse(34,-4,8,10,0,0,Math.PI*2);ctx.ellipse(34,10,8,10,0,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='rgba(255,255,255,.45)';
-        ctx.beginPath();ctx.arc(36,-7,2.4,0,Math.PI*2);ctx.arc(36,7,2.4,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#171717';
+        ctx.lineWidth=14;
+        ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(-8,7);ctx.lineTo(-102,8);ctx.stroke();
+        ctx.strokeStyle='#f2d928';
+        ctx.lineWidth=5;
+        for(let x=-22;x>=-92;x-=18){
+          ctx.beginPath();ctx.moveTo(x,2);ctx.lineTo(x,14);ctx.stroke();
+        }
+        ctx.strokeStyle='#171717';ctx.lineWidth=7;
+        ctx.beginPath();ctx.moveTo(-99,8);ctx.lineTo(-122,8);ctx.stroke();
 
-        // 脚と尾端。通常技では尾を大きく振る。
-        ctx.strokeStyle='#286746';ctx.lineWidth=4;ctx.lineCap='round';
+        ctx.fillStyle='#242424';ctx.beginPath();ctx.arc(31,3,16,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=(this.hurtFaceT>0||this.throwState)?'#7e5b4c':'#38b7a4';
+        ctx.beginPath();ctx.ellipse(37,1,11,14,.15,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.62)';
+        ctx.beginPath();ctx.arc(40,-4,3,0,Math.PI*2);ctx.fill();
+
+        ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.lineCap='round';
         ctx.beginPath();
-        ctx.moveTo(8,13);ctx.lineTo(22,32);ctx.moveTo(-1,14);ctx.lineTo(6,36);ctx.moveTo(-10,13);ctx.lineTo(-18,32);
+        ctx.moveTo(13,15);ctx.lineTo(30,34);ctx.lineTo(35,44);
+        ctx.moveTo(4,16);ctx.lineTo(13,40);ctx.lineTo(8,52);
+        ctx.moveTo(-5,14);ctx.lineTo(-19,35);ctx.lineTo(-23,47);
         ctx.stroke();
+
         if(this.attack==='punch'){
-          ctx.strokeStyle='#b9eef5';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(24,-2);ctx.lineTo(59,-15);ctx.stroke();
+          ctx.strokeStyle='rgba(220,248,255,.95)';
+          ctx.lineWidth=7;
+          ctx.beginPath();ctx.arc(32,3,34,-1.0,.75);ctx.stroke();
         }
         if(this.attack==='kick'){
-          ctx.strokeStyle='#245c43';ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(-48,7);ctx.lineTo(-82,17);ctx.stroke();
+          ctx.strokeStyle='rgba(245,225,80,.9)';
+          ctx.lineWidth=8;
+          ctx.beginPath();ctx.arc(-82,8,38,2.2,4.1);ctx.stroke();
         }
 
         ctx.restore();
@@ -1284,6 +1297,26 @@
         if(this.specialType==='crayfishCounterHit'){
           ctx.strokeStyle='#392b43';ctx.lineWidth=11;ctx.beginPath();
           ctx.moveTo(18,0);ctx.lineTo(58,45);ctx.moveTo(-18,0);ctx.lineTo(-58,45);ctx.stroke();
+        }
+
+        if(this.attack==='punch'){
+          const jab=16+Math.sin(performance.now()/42)*5;
+          ctx.strokeStyle='#2f2338';ctx.lineWidth=10;ctx.lineCap='round';
+          ctx.beginPath();
+          ctx.moveTo(19,-5);ctx.lineTo(52+jab,-18);ctx.lineTo(78+jab,-8);
+          ctx.moveTo(18,6);ctx.lineTo(49+jab,4);ctx.lineTo(76+jab,14);
+          ctx.stroke();
+          ctx.strokeStyle='rgba(238,244,238,.72)';ctx.lineWidth=3;
+          ctx.beginPath();ctx.moveTo(70+jab,-5);ctx.lineTo(88+jab,-7);ctx.stroke();
+        }
+
+        if(this.attack==='kick'){
+          const kick=18+Math.sin(performance.now()/48)*4;
+          ctx.strokeStyle='#2f2338';ctx.lineWidth=11;ctx.lineCap='round';
+          ctx.beginPath();
+          ctx.moveTo(17,22);ctx.lineTo(52+kick,38);ctx.lineTo(81+kick,31);
+          ctx.moveTo(10,31);ctx.lineTo(44+kick,55);ctx.lineTo(74+kick,52);
+          ctx.stroke();
         }
 
         ctx.restore();
@@ -3706,7 +3739,8 @@
     }
 
     if(f.type==='crayfish'){
-      if(kind==='kick' && hasCommand([f.face>0?'left':'right','down'],850)){
+      // 地上版ベリアル：網技は縦画面でも入力しやすい ↑ ↓ ＋キック。
+      if(kind==='kick' && hasCommand(['up','down'],850)){
         clearCommand();
         return specialCrayfishBottomSmash(f);
       }
