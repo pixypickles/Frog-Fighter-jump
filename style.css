@@ -1656,3 +1656,4 @@ body.portrait-play #portraitOverlay{
 body.portrait-play #titleScreen{display:none}
 body.portrait-play #titleScreen.active{display:flex}
 body.portrait-play .title-start-actions{justify-content:center}
+\n\n/* Ground prototype 0.2: controls live inside the thicker soil. */\nbody.portrait-play .buttons{\n  right:max(8px,env(safe-area-inset-right)) !important;\n  bottom:max(8px,env(safe-area-inset-bottom)) !important;\n  width:min(43vw,280px) !important;\n  height:min(26vh,250px) !important;\n}\nbody.portrait-play .action{\n  width:clamp(56px,17vw,72px) !important;\n  height:clamp(56px,17vw,72px) !important;\n}\n/* 少しだけ間隔を空けた菱形配置。親指の移動距離は増やしすぎない。 */\nbody.portrait-play .punch{right:22% !important;bottom:1% !important}\nbody.portrait-play .kick{right:0 !important;bottom:26% !important}\nbody.portrait-play .tongue{right:44% !important;bottom:26% !important}\nbody.portrait-play .guard{right:22% !important;bottom:51% !important}\n

@@ -94,6 +94,18 @@
   const LAND_AUTO_JUMP_SPEED = 880;
   const LAND_HORIZONTAL_DRAG = .22;
 
+  // Ground prototype 0.2: thicken the soil so the touch controls visually live
+  // inside the ground. Keep one source of truth for drawing and collision.
+  function landGroundDepth(){
+    return Math.min(340, Math.max(220, innerHeight * .24));
+  }
+  function landGroundTop(){
+    return innerHeight - landGroundDepth();
+  }
+  function landFloorY(){
+    return landGroundTop() - 55;
+  }
+
   const stats = {
     green:  { speed: 160, tongue: 210, damage: 1.00, defense:1.00, sink:7, hue:0, scale:1.00 },
     blue:   { speed: 182, tongue: 260, damage: 0.88, defense:1.00, sink:5, hue:95, scale:1.00 },
@@ -303,7 +315,7 @@
       '水圧カッター：↓ → ＋ パンチ（真横）',
       '水圧カッター：↓ → ＋ キック（約15°下）',
       'ヒーリングバブル：後ろ ＋ ガード ×2',
-      '高速バブル移動：反時計回り1回転 ＋ ガード'
+      'エアブースト：反時計回り1回転 ＋ ガード'
     ],
     orange:[
       'ホワイトカウンター：方向キー1回転 ＋ ガード',
@@ -1048,7 +1060,7 @@
 
       this.x += this.vx * dt;
       this.y += this.vy * dt;
-      const minY=78, maxY=innerHeight-65;
+      const minY=78, maxY=landFloorY();
 
       // 舌投げで壁・床に当たった瞬間に追加ダメージ
       if(this.throwState){
@@ -1763,20 +1775,23 @@
       }
 
       if(this.type==='yellow' && this.specialType==='raphaelBubbleMove'){
-        // 全身を泡で包む。高速移動中は飛び道具無効。
+        // 地上版エアブースト。泡の殻ではなく、身体の周囲に風の輪と流線を出す。
+        // 高速移動中の飛び道具無効というゲーム上の性質は維持する。
         ctx.save();
         ctx.globalCompositeOperation='lighter';
-        ctx.globalAlpha=.32;
-        ctx.fillStyle='#d8fbff';
-        ctx.beginPath();
-        ctx.ellipse(0,22,53,67,0,0,Math.PI*2);
-        ctx.fill();
+        ctx.strokeStyle='rgba(235,252,255,.82)';
+        ctx.lineWidth=3;
         ctx.globalAlpha=.72;
-        ctx.strokeStyle='#efffff';
-        ctx.lineWidth=4;
         ctx.beginPath();
-        ctx.ellipse(0,22,53,67,0,0,Math.PI*2);
+        ctx.ellipse(0,22,54,66,-.16,0,Math.PI*2);
         ctx.stroke();
+        ctx.globalAlpha=.52;
+        for(let i=-1;i<=1;i++){
+          ctx.beginPath();
+          ctx.moveTo(-62,5+i*24);
+          ctx.quadraticCurveTo(-22,-5+i*24,30,4+i*24);
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
@@ -2599,7 +2614,7 @@
         '↓ → ＋ パンチ：水圧カッター（真横）',
         '↓ → ＋ キック：水圧カッター（約15°下）',
         '後ろ ＋ ガード×2：ヒーリングバブル',
-        '反時計回り1回転 ＋ ガード：高速バブル移動（敵が右の場合）'
+        '反時計回り1回転 ＋ ガード：エアブースト（敵が右の場合）'
       ],
       orange:[
         'スティック1回転 ＋ ガード：ホワイトカウンター',
@@ -3535,18 +3550,19 @@
     f.raphaelMoveStartX=f.x;
     f.raphaelMoveStartY=f.y;
 
-    // 最初は斜め後ろ下へ、そこから大きく回り込んで前下へ。
+    // 地上版エアブースト：最初は斜め後ろ上へ風を受け、
+    // そこから前方の画面上端へ大きく回り込む。
     const dir=f.face;
     f.raphaelMoveControlX=f.x-dir*Math.min(180,innerWidth*.18);
-    f.raphaelMoveControlY=Math.min(innerHeight-70,f.y+Math.min(180,innerHeight*.30));
+    f.raphaelMoveControlY=Math.max(92,f.y-Math.min(220,innerHeight*.30));
     f.raphaelMoveEndX=dir>0 ? innerWidth-90 : 90;
-    f.raphaelMoveEndY=innerHeight-92;
+    f.raphaelMoveEndY=102;
     f.vx=0;
     f.vy=0;
 
-    comboEl.textContent='高速バブル移動!';
+    comboEl.textContent='エアブースト!';
     setTimeout(()=>{
-      if(comboEl.textContent==='高速バブル移動!') comboEl.textContent='';
+      if(comboEl.textContent==='エアブースト!') comboEl.textContent='';
     },720);
     clearCommand();
     return true;
@@ -4275,7 +4291,7 @@
             }
           }
 
-          // ラファエルさん：敵が右なら反時計回り1回転＋ガードで高速バブル移動
+          // ラファエルさん：敵が右なら反時計回り1回転＋ガードでエアブースト
           if(player.type==='yellow' && !player.throwState && hasFacingCircle(player,false,1150)){
             if(specialRaphaelBubbleMove(player)){
               btn.classList.remove('pressed');
@@ -4660,7 +4676,7 @@
       const t=Math.max(0,Math.min(1,f.raphaelMoveElapsed/dur));
       const u=1-t;
 
-      // 2次ベジェ：斜め後ろ下へ膨らみ、前下へぐるっと回り込む
+      // 2次ベジェ：斜め後ろ上へ膨らみ、前方の上端へぐるっと回り込む
       f.x=
         u*u*f.raphaelMoveStartX+
         2*u*t*f.raphaelMoveControlX+
@@ -4717,16 +4733,18 @@ function drawBackground(dt){
       ctx.fill();
     }
 
-    // Ground aligned with the fighter collision floor (fighter centre maxY = height-65).
+    // Thick ground: the touch controls sit visually inside the soil.
+    // Collision uses landFloorY(), so the frogs stand on the same top edge we draw here.
+    const groundTop=landGroundTop();
     ctx.fillStyle=th.floor;
-    ctx.fillRect(0,innerHeight-34,innerWidth,12);
+    ctx.fillRect(0,groundTop,innerWidth,16);
     ctx.fillStyle=th.soil;
-    ctx.fillRect(0,innerHeight-22,innerWidth,22);
+    ctx.fillRect(0,groundTop+16,innerWidth,innerHeight-groundTop-16);
 
     ctx.strokeStyle='rgba(42,104,48,.62)';ctx.lineWidth=3;ctx.lineCap='round';
     for(let x=12;x<innerWidth;x+=34){
-      ctx.beginPath();ctx.moveTo(x,innerHeight-34);ctx.lineTo(x-4,innerHeight-47);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x+5,innerHeight-34);ctx.lineTo(x+10,innerHeight-43);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x,groundTop);ctx.lineTo(x-4,groundTop-13);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x+5,groundTop);ctx.lineTo(x+10,groundTop-9);ctx.stroke();
     }
   }
 
