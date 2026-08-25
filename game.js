@@ -68,6 +68,7 @@
   let kawazuShots=[];
   let kawazuGhosts=[];
   let siltClouds = [];
+  let webTraps = [];
   let catfishCharges = [];
   let pressureBlades = [];
   let burstWaves = [];
@@ -782,6 +783,9 @@
       this.lilithSpinLastHitA=-9999;
       this.lilithSpinLastHitB=-9999;
       this.piranhaRushHit=false;
+      this.piranhaBiteHits=0;
+      this.webbedT=0;
+      this.webMash=0;
       this.piranhaDivePhase=0;
       this.piranhaDiveTargetX=0;
       this.crayfishRushStep=0;
@@ -810,6 +814,12 @@
     }
     update(dt) {
       if (this.stun>0) this.stun-=dt;
+      if(this.webbedT>0){
+        this.webbedT=Math.max(0,this.webbedT-dt);
+        this.stun=Math.max(this.stun,.10);
+        this.vx*=Math.pow(.08,dt); this.vy*=Math.pow(.08,dt);
+        if(this.webbedT<=0)this.webMash=0;
+      }
       if(this.healT>0){ this.healT=Math.max(0,this.healT-dt); }
       if(this.counterT>0){
         this.counterT-=dt;
@@ -865,8 +875,7 @@
         this.throwState ||
         this.specialType==='piranhaDivePunch' ||
         this.specialType==='piranhaDiveKick' ||
-        this.specialType==='crayfishSmashDrop' ||
-        this.specialType==='crayfishBottomSmash';
+        false;
       if(!aerialBoss || forcedFall){
         this.vy += LAND_GRAVITY * dt;
       }else{
@@ -935,23 +944,6 @@
         }
       }
 
-      // ボトムスマッシュ予約中：水底へ着くまで自動降下
-      if(this.crayfishSmashQueued){
-        this.crayfishSmashQueueT-=dt;
-        this.vx*=Math.pow(.20,dt);
-        this.vy=Math.max(this.vy,380);
-
-        if(this.y>=innerHeight-128){
-          this.specialType=null;
-          this.specialT=0;
-          executeCrayfishBottomSmash(this);
-        }else if(this.crayfishSmashQueueT<=0){
-          this.crayfishSmashQueued=false;
-          this.specialType=null;
-          this.specialT=0;
-          comboEl.textContent='';
-        }
-      }
 
       if(this.type==='crayfish' && this.crayfishCounterT>0){
         this.crayfishCounterT-=dt;
@@ -996,15 +988,23 @@
         }
       }
 
-      // アザゼルさん：高速空中突進
-      if(this.specialType==='piranhaRush' && !this.piranhaRushHit){
+      // アザゼル：相手を追う連続大顎噛みつき
+      if(this.specialType==='piranhaRush'){
         const other=this.isPlayer?enemy:player;
-        if(other && Math.hypot(other.x-this.x,other.y-this.y)<other.radius+this.radius+12){
-          this.piranhaRushHit=true; damageHit(this,other,9.2*this.damageMul,265*this.face,-35);
-          other.hurtFace='both'; other.hurtFaceT=.65;
+        if(other){
+          const dx=other.x-this.x,dy=other.y-this.y,len=Math.hypot(dx,dy)||1;
+          this.vx+=(dx/len*470-this.vx)*Math.min(1,dt*7.5);
+          this.vy+=(dy/len*470-this.vy)*Math.min(1,dt*7.5);
+          const now=performance.now();
+          if(Math.hypot(dx,dy)<other.radius+this.radius+30 && now-(this._lastPiranhaBite||0)>145){
+            this._lastPiranhaBite=now; this.piranhaBiteHits=(this.piranhaBiteHits||0)+1;
+            const fin=this.piranhaBiteHits>=5;
+            damageHit(this,other,(fin?3.6:1.65)*this.damageMul,(fin?120:24)*this.face,fin?-35:0);
+            if(fin)this.specialT=Math.min(this.specialT,.12);
+          }
         }
       }
-      // リヴァイアさん：上空から急降下
+      // アザゼルさん：上空から急降下
       if((this.specialType==='piranhaDivePunch'||this.specialType==='piranhaDiveKick') && this.piranhaDivePhase===2){
         const other=this.isPlayer?enemy:player;
         if(other && Math.hypot(other.x-this.x,other.y-this.y)<other.radius+this.radius+15){
@@ -1236,6 +1236,16 @@
           ctx.strokeStyle='rgba(245,225,80,.9)';
           ctx.lineWidth=8;
           ctx.beginPath();ctx.arc(-82,8,38,2.2,4.1);ctx.stroke();
+        }
+
+        if(this.specialType==='piranhaRush'){
+          const bite=(Math.sin(performance.now()/48)+1)*.5;
+          ctx.strokeStyle='#f3d72d';ctx.lineWidth=8;ctx.lineCap='round';
+          ctx.beginPath();
+          ctx.moveTo(43,-7);ctx.lineTo(61,-19+bite*9);ctx.lineTo(72,-7);
+          ctx.moveTo(43,9);ctx.lineTo(61,21-bite*9);ctx.lineTo(72,9);ctx.stroke();
+          ctx.strokeStyle='rgba(255,244,100,.55)';ctx.lineWidth=3;
+          ctx.beginPath();ctx.arc(58,1,25,0,Math.PI*2);ctx.stroke();
         }
 
         ctx.restore();
@@ -2216,7 +2226,7 @@
     }));
 
     particles=[]; hitRings=[]; guardWaves=[]; aquaTornadoes=[]; aquaVortices=[];
-    siltClouds=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
+    siltClouds=[]; webTraps=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
 
     for(let i=0;i<12;i++){
       spawnLeafTarget(i,true);
@@ -2546,14 +2556,14 @@
         'ホワイトオーラ中 パンチ／キック：白いリーチ約3倍攻撃'
       ],
       piranha:[
-        '← → ＋ 舌：高速突進噛みつき',
+        '舌×3：追尾連続噛みつき',
         '↓ ↑ ＋ パンチ：前寄りへ急降下',
         '↓ ↑ ＋ キック：後ろ寄りへ急降下'
       ],
       crayfish:[
-        'パンチ×3：クローラッシュ',
-        '← ↓ ＋ キック：ボトムスマッシュ',
-        '↓ ＋ ガード×2：クロー・カウンター'
+        'パンチ×3：多脚ラッシュ',
+        '↑ ↓ ＋ キック：ウェブトラップ',
+        '↓ ＋ ガード×2：ウェブ・カウンター'
       ],
       beelzebub:[
         '舌：通常の約1.5倍リーチ＋軽い上下追尾',
@@ -2600,7 +2610,7 @@
 
   function resetBattleEffects(){
     particles=[]; hitRings=[]; guardWaves=[]; aquaTornadoes=[]; aquaVortices=[];
-    siltClouds=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
+    siltClouds=[]; webTraps=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
     leafTargets=[]; guardTargets=[]; toxicWaters=[]; bossFish=[]; abyssShocks=[]; kawazuShots=[]; kawazuGhosts=[];
   }
 
@@ -3333,76 +3343,29 @@
 
   function executeCrayfishBottomSmash(f){
     if(gameOver || !f) return false;
-
-    f.crayfishSmashQueued=false;
-    f.crayfishSmashQueueT=0;
-    f.specialType='crayfishBottomSmash';
-    f.specialT=.72;
-    f.attack='kick';
-    f.attackT=.72;
-    f.crayfishSmashDone=false;
-
-    comboEl.textContent='ボトムスマッシュ!';
-    setTimeout(()=>{if(comboEl.textContent==='ボトムスマッシュ!')comboEl.textContent='';},720);
-
-    setTimeout(()=>{
-      if(gameOver || !f) return;
-      f.crayfishSmashDone=true;
-
-      const floorY=innerHeight-35;
-      for(let i=0;i<42;i++){
-        const life=1.65+Math.random()*.75;
-        siltClouds.push({
-          x:Math.random()*innerWidth,
-          y:floorY-Math.random()*Math.max(150,innerHeight*.58),
-          t:life,life,radius:45+Math.random()*70,mega:true
-        });
-      }
-      for(let i=0;i<14;i++){
-        const life=1.4+Math.random()*.55;
-        siltClouds.push({
-          x:Math.max(0,Math.min(innerWidth,f.x+(Math.random()-.5)*360)),
-          y:floorY-Math.random()*180,
-          t:life,life,radius:65+Math.random()*75,mega:true
-        });
-      }
-
-      const other=f.isPlayer?enemy:player;
-      if(other && Math.abs(other.x-f.x)<145 && other.y>innerHeight-145){
-        damageHit(f,other,5.8*f.damageMul,70*f.face,-135);
-      }
-    },220);
-
+    const other=f.isPlayer?enemy:player;
+    f.crayfishSmashQueued=false; f.crayfishSmashQueueT=0;
+    f.specialType='crayfishBottomSmash'; f.specialT=.62;
+    f.attack='kick'; f.attackT=.62;
+    const dx=(other?other.x:f.x+f.face*180)-f.x, dy=(other?other.y:f.y)-f.y;
+    const len=Math.hypot(dx,dy)||1;
+    webTraps.push({owner:f,x:f.x+f.face*28,y:f.y,vx:dx/len*430,vy:dy/len*430,t:1.15,life:1.15,r:25,hit:false});
+    comboEl.textContent='ウェブトラップ!';
+    setTimeout(()=>{if(comboEl.textContent==='ウェブトラップ!')comboEl.textContent='';},720);
     return true;
   }
 
   function specialCrayfishBottomSmash(f){
-    if(gameOver || f.stun>0 || f.specialT>0 || f.crayfishSmashQueued) return false;
-
-    // 水底すれすれなら、その場で発動してよい
-    if(f.y>=innerHeight-128){
-      return executeCrayfishBottomSmash(f);
-    }
-
-    // 高い場所ではまず水底へ降りる。空中で土煙は出さない。
-    f.crayfishSmashQueued=true;
-    f.crayfishSmashQueueT=2.0;
-    f.specialType='crayfishSmashDrop';
-    f.specialT=2.0;
-    f.attack=null;
-    f.attackT=0;
-    f.vx*=.25;
-    f.vy=Math.max(f.vy,360);
-    comboEl.textContent='水底へ…';
-    return true;
+    if(gameOver || f.stun>0 || f.specialT>0) return false;
+    return executeCrayfishBottomSmash(f);
   }
 
   function specialPiranhaRush(f){
     if(gameOver || f.stun>0 || f.specialT>0) return false;
-    f.specialType='piranhaRush'; f.specialT=.72; f.attack='tongue'; f.attackT=.72;
-    f.piranhaRushHit=false; f.vx += f.face*610;
-    comboEl.textContent='ドラゴンダッシュ!';
-    setTimeout(()=>{if(comboEl.textContent==='ドラゴンダッシュ!')comboEl.textContent='';},650);
+    f.specialType='piranhaRush'; f.specialT=1.18; f.attack='tongue'; f.attackT=1.18;
+    f.piranhaRushHit=false; f.piranhaBiteHits=0;
+    comboEl.textContent='マンディブル・ラッシュ!';
+    setTimeout(()=>{if(comboEl.textContent==='マンディブル・ラッシュ!')comboEl.textContent='';},950);
     return true;
   }
 
@@ -3732,8 +3695,6 @@
     }
 
     if(f.type==='piranha'){
-      const back=f.face>0?'left':'right', forward=f.face>0?'right':'left';
-      if(kind==='tongue' && hasCommand([back,forward],850)){ clearCommand(); return specialPiranhaRush(f); }
       if(kind==='punch' && hasCommand(['down','up'],900)){ clearCommand(); return specialPiranhaDive(f,'punch'); }
       if(kind==='kick' && hasCommand(['down','up'],900)){ clearCommand(); return specialPiranhaDive(f,'kick'); }
     }
@@ -3805,8 +3766,18 @@
     }
 
     if(gameOver || f.guard) return;
+    if(f.webbedT>0){
+      f.webMash=(f.webMash||0)+1;
+      f.webbedT=Math.max(0,f.webbedT-.13);
+      spawnImpact(f.x+(Math.random()-.5)*25,f.y+(Math.random()-.5)*25,'guard');
+      return;
+    }
 
     const rapidTriple=(kind==='punch' || kind==='tongue') ? registerRapidTap(kind) : false;
+    if(f.type==='piranha' && kind==='tongue' && rapidTriple){
+      f.attackT=0; f.attack=null; f.tongueT=0;
+      if(specialPiranhaRush(f)){ playSfx('special'); return; }
+    }
     // アスモデウスさん：パンチ×3でクローラッシュ
     if(f.type==='crayfish' && kind==='punch' && rapidTriple){
       f.attackT=0;
@@ -4018,6 +3989,10 @@
   }
 
   function damageHit(attacker,target,dmg,kx,ky,bypassCounter=false){
+    if(target && target.webbedT>0){
+      target.webbedT=0; target.webMash=0;
+      spawnImpact(target.x,target.y,'guard');
+    }
     if(attacker && !attacker.isPlayer && target && target.isPlayer){
       dmg*=difficultyProfile().damage;
     }
@@ -4682,6 +4657,9 @@ function drawBackground(dt){
     if(!gameOver){
       let ix=input.x+(keys['d']?1:0)-(keys['a']?1:0);
       const iy=input.y+(keys['s']?1:0)-(keys['w']?1:0);
+      if(player.webbedT>0 && (Math.abs(ix)>.35 || Math.abs(iy)>.35)){
+        player.webbedT=Math.max(0,player.webbedT-dt*1.45);
+      }
       // カエルは上下入力をコマンド専用にするが、
       // アザゼルとベリアルは空中生物なので上下にも自在に移動できる。
       if(player.stun<=0&&!player.guard){
@@ -5138,6 +5116,18 @@ function drawBackground(dt){
     burstWaves.forEach(b=>{b.t-=dt;});
       burstWaves=burstWaves.filter(b=>b.t>0);
 
+    webTraps.forEach(w=>{
+        w.t-=dt; w.x+=w.vx*dt; w.y+=w.vy*dt;
+        const target=w.owner.isPlayer?enemy:player;
+        if(!w.hit && target && Math.hypot(target.x-w.x,target.y-w.y)<target.radius+w.r){
+          w.hit=true; target.webbedT=3.2; target.webMash=0;
+          target.attack=null; target.attackT=0; target.specialType=null; target.specialT=0;
+          target.vx*=.1; target.vy*=.1; spawnImpact(target.x,target.y,'guard');
+        }
+        });
+        webTraps=webTraps.filter(w=>w.t>0&&!w.hit);
+
+
     siltClouds.forEach(s=>{
         s.t-=dt;
         s.radius+=34*dt;
@@ -5541,6 +5531,20 @@ function drawBackground(dt){
     });
 
     // 水底の土煙も描画フェーズへ移動
+    webTraps.forEach(w=>{
+      ctx.save();ctx.translate(w.x,w.y);ctx.strokeStyle='rgba(248,252,248,.95)';ctx.lineWidth=2;
+      for(let r=7;r<=28;r+=7){ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();}
+      for(let a=0;a<Math.PI*2;a+=Math.PI/4){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*30,Math.sin(a)*30);ctx.stroke();}
+      ctx.restore();
+    });
+    [player,enemy].forEach(f=>{
+      if(!f||f.webbedT<=0)return;
+      ctx.save();ctx.translate(f.x,f.y);ctx.strokeStyle='rgba(250,253,250,.94)';ctx.lineWidth=3;
+      for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(-48,i*13);ctx.quadraticCurveTo(0,i*9+(i%2?12:-12),48,i*13);ctx.stroke();}
+      for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(i*18,-52);ctx.quadraticCurveTo(i*10+(i%2?10:-10),0,i*18,52);ctx.stroke();}
+      ctx.restore();
+    });
+
     siltClouds.forEach(s=>{
       const a=Math.max(0,s.t/s.life);
       ctx.save();

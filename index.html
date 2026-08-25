@@ -6,7 +6,16 @@
   <meta name="theme-color" content="#0b6f7a" />
   <title>フロッグファイタージャンプ</title>
   <link rel="stylesheet" href="style.css" />
-</head>
+<style>
+.azazel-card-icon,.belial-card-icon{position:absolute!important;left:26px;top:50%;transform:translateY(-50%);width:116px;height:92px}
+.azazel-card-icon:before{content:"";position:absolute;left:12px;top:40px;width:88px;height:12px;background:repeating-linear-gradient(90deg,#171717 0 13px,#f2d928 13px 19px);border-radius:50% 8px 8px 50%}
+.azazel-card-icon:after{content:"";position:absolute;left:80px;top:31px;width:27px;height:27px;background:#222;border-radius:50%;box-shadow:12px 1px 0 -5px #38b7a4}
+.azazel-card-icon i:before,.azazel-card-icon i:after{content:"";position:absolute;left:42px;width:54px;height:17px;border:2px solid rgba(220,245,250,.9);background:rgba(200,235,245,.45);border-radius:70%}
+.azazel-card-icon i:before{top:20px;transform:rotate(-22deg)}.azazel-card-icon i:after{top:57px;transform:rotate(22deg)}
+.belial-card-icon:before{content:"";position:absolute;left:37px;top:27px;width:49px;height:51px;background:#493854;border-radius:48%}
+.belial-card-icon:after{content:"";position:absolute;left:49px;top:15px;width:31px;height:29px;background:#5b4668;border-radius:50%}
+.belial-card-icon i{position:absolute;left:14px;top:42px;width:94px;height:5px;background:#382a42;box-shadow:0 -19px 0 #382a42,0 19px 0 #382a42;transform:rotate(13deg)}
+</style></head>
 <body>
   <div id="app">
     <section id="titleScreen" class="screen active">
@@ -25,7 +34,7 @@
 
     <section id="selectScreen" class="screen">
       <h2>ファイターをえらぶ</h2>
-      <div class="version-badge">FROG FIGHTER JUMP / v1.0</div>
+      <div class="version-badge">FROG FIGHTER JUMP / v1.1</div>
       <div class="fighter-grid">
         <button class="fighter-card selected" data-fighter="green">
           <span class="fighter-emoji" style="--frog-body:#35d851;--frog-eye-bump:#69e86e;--frog-iris:#173126;--frog-mouth:#146030;--frog-cheek:#d7b774;position:absolute;left:18px;top:50%;transform:translateY(-50%);--frog-eye-area:#ffffff;">🐸</span>
@@ -64,16 +73,16 @@
           <span class="special-hint move-names">ホワイトカウンター / ガーディアンタックル / ホワイトリーチ</span>
         </button>
         <button class="fighter-card" data-fighter="piranha">
-          <span class="fighter-emoji creature-emoji">🪰</span>
+          <span class="fighter-emoji creature-emoji azazel-card-icon"><i></i></span>
           <strong>アザゼルさん</strong>
         
-          <span class="special-hint move-names">高速突進 / 急降下アタック / 急降下テール</span>
+          <span class="special-hint move-names">追尾連続噛みつき / 急降下アタック / 急降下テール</span>
         </button>
         <button class="fighter-card" data-fighter="crayfish">
-          <span class="fighter-emoji creature-emoji">🕷️</span>
+          <span class="fighter-emoji creature-emoji belial-card-icon"><i></i></span>
           <strong>ベリアルさん</strong>
         
-          <span class="special-hint move-names">多脚ラッシュ / ウェブスマッシュ / ウェブ・カウンター</span>
+          <span class="special-hint move-names">多脚ラッシュ / ウェブトラップ / ウェブ・カウンター</span>
         </button>
         <button id="beelzebubCard" class="fighter-card boss-card" data-fighter="beelzebub" hidden>
           <span class="fighter-emoji boss-frog" style="--frog-body:#111714;--frog-eye-bump:#6eff20;--frog-iris:#b5ff48;--frog-mouth:#70d52b;--frog-cheek:#547232;position:absolute;left:18px;top:50%;transform:translateY(-50%);--frog-eye-area:#ffffff;">🐸</span>
@@ -134,7 +143,7 @@
 
     <section id="gameScreen" class="screen game-screen">
       <canvas id="gameCanvas"></canvas>
-      <div class="battle-version">v1.0</div>
+      <div class="battle-version">v1.1</div>
       <div id="storyNarrative" class="story-narrative" hidden>
         <div class="story-narrative-box">
           <div id="storyNarrativeText" class="story-narrative-text"></div>
