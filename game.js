@@ -325,14 +325,14 @@
       '白い長リーチ攻撃：オーラ中 パンチ / キック'
     ],
     piranha:[
-      '高速突進噛みつき：← → ＋ 舌',
+      '高速突進：← → ＋ 舌',
       '急降下①：↓ ↑ ＋ パンチ',
       '急降下②：↓ ↑ ＋ キック'
     ],
     crayfish:[
-      'クローラッシュ：パンチ ×3',
-      'ボトムスマッシュ：← ↓ ＋ キック',
-      'クロー・カウンター：↓ ＋ ガード ×2'
+      '多脚ラッシュ：パンチ ×3',
+      'ウェブスマッシュ：← ↓ ＋ キック',
+      'ウェブ・カウンター：↓ ＋ ガード ×2'
     ],
     beelzebub:[
       'ヴェノム・ウォーター：方向キー1回転 ＋ ガード',
@@ -739,6 +739,10 @@
     constructor(x, y, isPlayer, type='green') {
       const s = stats[type] || stats.green;
       this.x=x; this.y=y; this.vx=0; this.vy=0; this.isPlayer=isPlayer;
+      // 地上版ボス生物は常時空中型。
+      // アザゼル（トンボ）は浮遊、ベリアル（クモ）は天井の糸からぶら下がる。
+      if(type==='piranha') this.y=Math.min(this.y,innerHeight*.40);
+      if(type==='crayfish') this.y=Math.min(this.y,innerHeight*.36);
       this.type=type; this.speed=s.speed; this.tongueRange=s.tongue; this.damageMul=s.damage;
       this.defense=s.defense||1; this.bodyScale=s.scale||1;
       this.sink=s.sink; this.hue=s.hue;
@@ -854,9 +858,22 @@
         }
       }
 
-      // Ground physics: strong downward gravity replaces underwater sinking/buoyancy.
-      // Special moves still receive gravity; their own impulses are added on top of it.
-      this.vy += LAND_GRAVITY * dt;
+      // Ground physics. Frogs obey strong gravity.
+      // アザゼル（トンボ）とベリアル（クモ）は空中常駐型なので通常時は重力を相殺する。
+      const aerialBoss = this.type==='piranha' || this.type==='crayfish';
+      const forcedFall =
+        this.throwState ||
+        this.specialType==='piranhaDivePunch' ||
+        this.specialType==='piranhaDiveKick' ||
+        this.specialType==='crayfishSmashDrop' ||
+        this.specialType==='crayfishBottomSmash';
+      if(!aerialBoss || forcedFall){
+        this.vy += LAND_GRAVITY * dt;
+      }else{
+        // 浮遊感を残しつつ入力・ノックバックには反応する。
+        this.vy *= Math.pow(.19,dt);
+        this.vy += Math.sin(performance.now()/430 + (this.type==='crayfish'?1.7:0))*18*dt;
+      }
       if(this.specialType==='urielTackle'){
         this.vx *= Math.pow(.72, dt);
       }else if(this.dashT>0){
@@ -948,7 +965,7 @@
         }
       }
 
-      // アスモデウスさん：クローラッシュ
+      // ベリアルさん：多脚ラッシュ
       // 土煙の中でも上下だけ少し相手へ自動追尾する。
       if(this.specialType==='crayfishRush'){
         const other=this.isPlayer?enemy:player;
@@ -979,7 +996,7 @@
         }
       }
 
-      // リヴァイアさん：高速突進噛みつき
+      // アザゼルさん：高速空中突進
       if(this.specialType==='piranhaRush' && !this.piranhaRushHit){
         const other=this.isPlayer?enemy:player;
         if(other && Math.hypot(other.x-this.x,other.y-this.y)<other.radius+this.radius+12){
@@ -1122,7 +1139,7 @@
 
       // Frog-style automatic jumping: no extra jump button and no conflict with
       // command inputs that contain UP. A normal landing immediately launches again.
-      if(this.y>=maxY && !this.throwState && this.vy>=0){
+      if(this.y>=maxY && !this.throwState && this.vy>=0 && this.type!=='piranha' && this.type!=='crayfish'){
         this.y=maxY;
         this.vy=-LAND_AUTO_JUMP_SPEED;
       }
@@ -1160,12 +1177,11 @@
       }
 
 
-      // ピラニア：リヴァイアサンさん
+      // トンボ：アザゼルさん。通常時は空中に浮遊。
       if(this.type==='piranha'){
         if(this.face<0) ctx.scale(-1,1);
-        // パンチは前転で背びれ斬り、キックはバク転で尻尾斬り
         if((this.specialType==='piranhaDivePunch'||this.specialType==='piranhaDiveKick') && this.piranhaDivePhase>=2){
-          ctx.rotate(Math.PI/2); // 口を真下へ向けて急降下
+          ctx.rotate(Math.PI/2);
         }else if(this.attack==='punch' && this.specialType!=='piranhaDivePunch'){
           const t=Math.max(0,Math.min(1,this.attackT/.34)); ctx.rotate((1-t)*Math.PI*2);
         }else if(this.attack==='kick' && this.specialType!=='piranhaDiveKick'){
@@ -1173,243 +1189,107 @@
         }
         if(this.flash>0) ctx.globalAlpha=.55;
 
-        // 胴体
-        ctx.fillStyle='#d63b32';
+        // 羽ばたき。左右2対の細長い羽。
+        const flap=Math.sin(performance.now()/42)*.16;
+        ctx.fillStyle='rgba(190,235,245,.72)';
+        ctx.beginPath();ctx.ellipse(-8,-5,42,10,-.48+flap,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(-8,8,42,10,.48-flap,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(7,-5,38,9,.48-flap,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(7,8,38,9,-.48+flap,0,Math.PI*2);ctx.fill();
+
+        // 長い腹部と胸部
+        ctx.fillStyle='#3a8d61';
+        ctx.beginPath();ctx.ellipse(-24,8,35,10,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#57b978';
+        ctx.beginPath();ctx.ellipse(4,6,18,17,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#2b7251';
+        for(let i=0;i<4;i++){ctx.fillRect(-50+i*12,2,3,12);}
+
+        // 頭と大きな複眼
+        ctx.fillStyle='#68c98b';ctx.beginPath();ctx.arc(28,3,18,0,Math.PI*2);ctx.fill();
+        const hurt=this.hurtFaceT>0||this.throwState;
+        ctx.fillStyle=hurt?'#612d35':'#8d1f4d';
+        ctx.beginPath();ctx.ellipse(34,-4,8,10,0,0,Math.PI*2);ctx.ellipse(34,10,8,10,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.45)';
+        ctx.beginPath();ctx.arc(36,-7,2.4,0,Math.PI*2);ctx.arc(36,7,2.4,0,Math.PI*2);ctx.fill();
+
+        // 脚と尾端。通常技では尾を大きく振る。
+        ctx.strokeStyle='#286746';ctx.lineWidth=4;ctx.lineCap='round';
         ctx.beginPath();
-        ctx.ellipse(0,8,43,28,0,0,Math.PI*2);
-        ctx.fill();
-
-        // 腹側
-        ctx.fillStyle='#e97850';
-        ctx.beginPath();
-        ctx.ellipse(4,16,29,15,0,0,Math.PI*2);
-        ctx.fill();
-
-        // 尾びれ
-        ctx.fillStyle='#2fae55';
-        ctx.beginPath();
-        ctx.moveTo(-37,6);
-        ctx.lineTo(-67,-16);
-        ctx.lineTo(-58,7);
-        ctx.lineTo(-68,29);
-        ctx.closePath();
-        ctx.fill();
-
-        // 背びれ
-        ctx.fillStyle='#279c4c';
-        ctx.beginPath();
-        ctx.moveTo(-8,-17);
-        ctx.lineTo(8,-39);
-        ctx.lineTo(18,-15);
-        ctx.closePath();
-        ctx.fill();
-
-        // 緑の斑点模様
-        ctx.fillStyle='#35b95d';
-        ctx.beginPath();
-        ctx.ellipse(-10,-3,11,7,-.25,0,Math.PI*2);
-        ctx.ellipse(10,15,8,5,.35,0,Math.PI*2);
-        ctx.fill();
-
-        // 目
-        if(this.hurtFaceT>0 || this.throwState){
-          ctx.strokeStyle='#20292b';
-          ctx.lineWidth=4;
-          ctx.lineCap='round';
-          ctx.beginPath();
-          ctx.moveTo(15,-4); ctx.lineTo(22,0); ctx.lineTo(29,-4);
-          ctx.stroke();
-        }else{
-          ctx.fillStyle='#fff';
-          ctx.beginPath();
-          ctx.arc(22,-4,7,0,Math.PI*2);
-          ctx.fill();
-          ctx.fillStyle='#111';
-          ctx.beginPath();
-          ctx.arc(24,-4,3,0,Math.PI*2);
-          ctx.fill();
-        }
-
-        // ピラニアらしい口と歯
-        ctx.fillStyle='#26343b';
-        ctx.beginPath();
-        ctx.moveTo(35,7);
-        ctx.lineTo(56,-2);
-        ctx.lineTo(53,15);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle='#fff';
-        for(let i=0;i<4;i++){
-          ctx.beginPath();
-          ctx.moveTo(39+i*4,4);
-          ctx.lineTo(41+i*4,9);
-          ctx.lineTo(43+i*4,4);
-          ctx.closePath();
-          ctx.fill();
-        }
-
-        if(this.hurtFaceT>0 || this.throwState){
-          // やられ時は口角を下げる線を重ねる
-          ctx.strokeStyle='#411f23';
-          ctx.lineWidth=4;
-          ctx.beginPath();
-          ctx.arc(43,13,12,1.15*Math.PI,1.85*Math.PI);
-          ctx.stroke();
-        }
-
-        // 通常パンチ/キック相当：体当たりや尾びれ攻撃に見える簡易表現
+        ctx.moveTo(8,13);ctx.lineTo(22,32);ctx.moveTo(-1,14);ctx.lineTo(6,36);ctx.moveTo(-10,13);ctx.lineTo(-18,32);
+        ctx.stroke();
         if(this.attack==='punch'){
-          ctx.strokeStyle='#c8e3ec';
-          ctx.lineWidth=6;
-          ctx.beginPath();
-          ctx.moveTo(34,2); ctx.lineTo(62,-8);
-          ctx.stroke();
+          ctx.strokeStyle='#b9eef5';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(24,-2);ctx.lineTo(59,-15);ctx.stroke();
         }
         if(this.attack==='kick'){
-          ctx.strokeStyle='#536b76';
-          ctx.lineWidth=10;
-          ctx.beginPath();
-          ctx.moveTo(-35,8); ctx.lineTo(-72,6);
-          ctx.stroke();
+          ctx.strokeStyle='#245c43';ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(-48,7);ctx.lineTo(-82,17);ctx.stroke();
         }
 
         ctx.restore();
         return;
       }
 
-      // ザリガニ：アスモデウスさん
+
+      // クモ：ベリアルさん。天井から伸びる糸に繋がり、空中を自在に移動。
       if(this.type==='crayfish'){
         if(this.face<0) ctx.scale(-1,1);
         if(this.flash>0) ctx.globalAlpha=.55;
 
-        // 胴体
-        ctx.fillStyle='#9b3f2f';
+        // 天井へ続く蜘蛛の糸（画面座標へ戻して描くため現在位置ぶん上へ伸ばす）
+        ctx.save();
+        if(this.face<0) ctx.scale(-1,1);
+        ctx.strokeStyle='rgba(238,244,238,.88)';
+        ctx.lineWidth=2.3;
         ctx.beginPath();
-        ctx.ellipse(-2,16,28,34,0,0,Math.PI*2);
-        ctx.fill();
+        ctx.moveTo(0,-17);
+        ctx.quadraticCurveTo(10,-this.y*.55,0,-this.y);
+        ctx.stroke();
+        ctx.restore();
 
-        // 頭
-        ctx.fillStyle='#b64d37';
+        // 腹部と頭
+        ctx.fillStyle='#44354f';
+        ctx.beginPath();ctx.ellipse(-3,17,31,36,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#5a4568';
+        ctx.beginPath();ctx.ellipse(8,-11,23,21,0,0,Math.PI*2);ctx.fill();
+
+        // 8本脚。ラッシュ中は先端を高速に振る。
+        const rush=this.specialType==='crayfishRush';
+        const wig=rush?Math.sin(performance.now()/34)*16:0;
+        ctx.strokeStyle='#392b43';ctx.lineWidth=8;ctx.lineCap='round';
         ctx.beginPath();
-        ctx.ellipse(3,-10,29,24,0,0,Math.PI*2);
-        ctx.fill();
-
-        // 尻尾の節
-        ctx.fillStyle='#873427';
-        for(let i=0;i<3;i++){
-          ctx.beginPath();
-          ctx.ellipse(-8-i*10,43+i*7,18-i*2,10,0,0,Math.PI*2);
-          ctx.fill();
-        }
-
-        // 目
-        if(this.hurtFaceT>0 || this.throwState){
-          ctx.strokeStyle='#3b1d18';
-          ctx.lineWidth=3.5;
-          ctx.lineCap='round';
-          ctx.beginPath();
-          ctx.moveTo(7,-23); ctx.lineTo(14,-19); ctx.lineTo(21,-23);
-          ctx.moveTo(-10,-23); ctx.lineTo(-3,-19); ctx.lineTo(4,-23);
-          ctx.stroke();
-        }else{
-          ctx.fillStyle='#fff';
-          ctx.beginPath();
-          ctx.arc(14,-23,5.5,0,Math.PI*2);
-          ctx.arc(-3,-23,5.5,0,Math.PI*2);
-          ctx.fill();
-          ctx.fillStyle='#111';
-          ctx.beginPath();
-          ctx.arc(15,-23,2.5,0,Math.PI*2);
-          ctx.arc(-2,-23,2.5,0,Math.PI*2);
-          ctx.fill();
-        }
-
-        // ハサミ：腕だけでなくハサミ本体ごと振る
-        let clawExtend=0, clawY=7, armStartY=0;
-        if(this.attack==='crayfishStab') clawExtend=28;
-        if(this.attack==='crayfishHammer'){ clawExtend=8; clawY=42; armStartY=4; }
-        if(this.attack==='crayfishUpper'){ clawExtend=8; clawY=-34; armStartY=-4; }
-        if(this.specialType==='crayfishRush'){
-          clawExtend=18+Math.sin(performance.now()/45)*10;
-          clawY=Math.sin(performance.now()/55)*12;
-        }
-        ctx.strokeStyle='#a94331'; ctx.lineWidth=11; ctx.lineCap='round';
-        ctx.beginPath();
-        ctx.moveTo(18,armStartY); ctx.lineTo(42+clawExtend,clawY);
-        ctx.moveTo(-18,2); ctx.lineTo(-39,13); ctx.stroke();
-
-        ctx.fillStyle='#c95b40'; ctx.beginPath();
-        ctx.ellipse(49+clawExtend,clawY,19,14,.15,0,Math.PI*2);
-        ctx.ellipse(-45,13,17,12,-.15,0,Math.PI*2); ctx.fill();
-
-        if(this.attack==='crayfishHammer'||this.attack==='crayfishUpper'){
-          ctx.fillStyle='#e57a58'; ctx.beginPath();
-          ctx.ellipse(59+clawExtend,clawY-2,10,8,.2,0,Math.PI*2); ctx.fill();
-        }
-
-        // ハサミ割れ
-        ctx.strokeStyle='#793025';
-        ctx.lineWidth=3;
-        ctx.beginPath();
-        ctx.moveTo(49+clawExtend,clawY-11); ctx.lineTo(51+clawExtend,clawY+11);
-        ctx.moveTo(-45,2); ctx.lineTo(-45,23);
+        const legYs=[-5,7,19,30];
+        legYs.forEach((yy,i)=>{
+          const ext=38+i*4+(rush?10:0);
+          ctx.moveTo(-18,yy);ctx.lineTo(-45,yy-18-i*3);ctx.lineTo(-ext-18,yy-8+wig*(i%2?1:-1));
+          ctx.moveTo(18,yy);ctx.lineTo(45,yy-18-i*3);ctx.lineTo(ext+18,yy-8-wig*(i%2?1:-1));
+        });
         ctx.stroke();
 
-        // 触角
-        ctx.strokeStyle='#c7674f';
-        ctx.lineWidth=2.5;
-        ctx.beginPath();
-        ctx.moveTo(12,-28); ctx.quadraticCurveTo(39,-48,58,-39);
-        ctx.moveTo(-2,-28); ctx.quadraticCurveTo(-31,-49,-51,-37);
-        ctx.stroke();
-
-          if(this.type==='crayfish' && this.specialType==='crayfishCounter'){
-          // 待機中は通常の腕をそのまま使い、両目だけ赤く発光。
-          ctx.save();
-          ctx.globalCompositeOperation='lighter';
-          ctx.fillStyle='#ff2a20';
-          ctx.shadowColor='#ff1d12';
-          ctx.shadowBlur=13;
-          ctx.beginPath();
-          ctx.arc(-14,-25,6.5,0,Math.PI*2);
-          ctx.arc(14,-25,6.5,0,Math.PI*2);
-          ctx.fill();
-          ctx.restore();
+        // 顔。カウンター待機中は複眼が赤く光る。
+        const counter=this.specialType==='crayfishCounter';
+        ctx.fillStyle=counter?'#ff382e':'#d9e6dc';
+        for(const [ex,ey] of [[0,-18],[10,-20],[19,-15],[5,-9],[15,-7],[25,-5]]){
+          ctx.beginPath();ctx.arc(ex,ey,3.6,0,Math.PI*2);ctx.fill();
+        }
+        if(counter){
+          ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,50,35,.35)';
+          ctx.beginPath();ctx.arc(11,-14,24,0,Math.PI*2);ctx.fill();ctx.restore();
         }
 
-        if(this.type==='crayfish' && this.specialType==='crayfishCounterHit'){
-          // 反撃は両腕を上から振り下ろす
-          ctx.save();
-          ctx.strokeStyle='#a94331';
-          ctx.lineWidth=12;
-          ctx.lineCap='round';
-          ctx.beginPath();
-          ctx.moveTo(18,0); ctx.lineTo(54,46);
-          ctx.moveTo(-18,0); ctx.lineTo(-48,43);
-          ctx.stroke();
-
-          ctx.fillStyle='#d36a4c';
-          ctx.beginPath();
-          ctx.ellipse(61,48,20,15,.2,0,Math.PI*2);
-          ctx.ellipse(-55,45,20,15,-.2,0,Math.PI*2);
-          ctx.fill();
-          ctx.restore();
+        // 糸を使う攻撃の簡易表現
+        if(this.attack==='crayfishStab' || this.specialType==='crayfishBottomSmash'){
+          ctx.strokeStyle='rgba(245,250,245,.92)';ctx.lineWidth=5;
+          ctx.beginPath();ctx.moveTo(18,-2);ctx.lineTo(70,this.specialType==='crayfishBottomSmash'?54:4);ctx.stroke();
         }
-
-      // ボトムスマッシュ時は両ハサミを下へ
-        if(this.specialType==='crayfishBottomSmash'){
-          ctx.strokeStyle='#7a2f24';
-          ctx.lineWidth=12;
-          ctx.beginPath();
-          ctx.moveTo(12,5); ctx.lineTo(35,48);
-          ctx.moveTo(-12,7); ctx.lineTo(-28,50);
-          ctx.stroke();
+        if(this.specialType==='crayfishCounterHit'){
+          ctx.strokeStyle='#392b43';ctx.lineWidth=11;ctx.beginPath();
+          ctx.moveTo(18,0);ctx.lineTo(58,45);ctx.moveTo(-18,0);ctx.lineTo(-58,45);ctx.stroke();
         }
 
         ctx.restore();
         return;
       }
+
 
       // ウリエルさんは少し大柄
       if(this.bodyScale && this.bodyScale!==1) ctx.scale(this.bodyScale,this.bodyScale);
@@ -2680,7 +2560,7 @@
     return {
       green:'ミカエルさん', blue:'ガブリエルさん', black:'ルシファーさん',
       purple:'リリスさん', yellow:'ラファエルさん', orange:'ウリエルさん',
-      piranha:'リヴァイアさん', crayfish:'アスモデウスさん',
+      piranha:'アザゼルさん', crayfish:'ベリアルさん',
       beelzebub:'ベルゼブブさん', kawazu:'カワズさん'
     }[type]||type;
   }
@@ -3488,8 +3368,8 @@
     if(gameOver || f.stun>0 || f.specialT>0) return false;
     f.specialType='piranhaRush'; f.specialT=.72; f.attack='tongue'; f.attackT=.72;
     f.piranhaRushHit=false; f.vx += f.face*610;
-    comboEl.textContent='高速突進噛みつき!';
-    setTimeout(()=>{if(comboEl.textContent==='高速突進噛みつき!')comboEl.textContent='';},650);
+    comboEl.textContent='ドラゴンダッシュ!';
+    setTimeout(()=>{if(comboEl.textContent==='ドラゴンダッシュ!')comboEl.textContent='';},650);
     return true;
   }
 
@@ -3501,7 +3381,7 @@
     const offset=(variant==='punch'?42:-42)*f.face;
     f.piranhaDiveTargetX=Math.max(45,Math.min(innerWidth-45,(other?other.x:f.x)+offset));
     f.vy=-620; f.vx*=.15;
-    comboEl.textContent=variant==='punch'?'急降下背びれ!':'急降下テール!';
+    comboEl.textContent=variant==='punch'?'急降下アタック!':'急降下テール!';
     setTimeout(()=>{
       if(gameOver || !f || !f.specialType || !f.specialType.startsWith('piranhaDive')) return;
       f.x=f.piranhaDiveTargetX; f.y=-42; f.vx=0; f.vy=690; f.piranhaDivePhase=2;
@@ -4490,8 +4370,14 @@
         if(roll<dt*.52){ specialAbyssShock(enemy); return; }
       }
 
-      // Ground CPU chases horizontally; vertical movement comes from gravity/auto-jumps.
-      if(dist>105){ enemy.vx += Math.sign(dx)*enemy.speed*1.05*diff.move*dt; }
+      // 地上CPU。カエルは横追尾＋自動ジャンプ。
+      // アザゼル／ベリアルは空中で上下も追尾する。
+      if(dist>105){
+        enemy.vx += Math.sign(dx)*enemy.speed*1.05*diff.move*dt;
+        if(enemy.type==='piranha' || enemy.type==='crayfish'){
+          enemy.vy += Math.sign(dy)*enemy.speed*.78*diff.move*dt;
+        }
+      }
       else if(Math.random()<dt*.8*diff.attack) attack(enemy,Math.random()<.62?'punch':'kick');
       if(enemy.tonguePullTarget && enemy.tonguePullTimer>0 && Math.random()<dt*2.2*diff.attack){
         attack(enemy,'tongue');
@@ -4761,10 +4647,14 @@ function drawBackground(dt){
     let dt=Math.min(.033,(now-last)/1000);last=now;
     if(!gameOver){
       let ix=input.x+(keys['d']?1:0)-(keys['a']?1:0);
-      // UP/DOWN are intentionally NOT applied as movement in the ground prototype.
-      // input.y is still recorded by the command system for special-move motions.
+      const iy=input.y+(keys['s']?1:0)-(keys['w']?1:0);
+      // カエルは上下入力をコマンド専用にするが、
+      // アザゼルとベリアルは空中生物なので上下にも自在に移動できる。
       if(player.stun<=0&&!player.guard){
         player.vx += ix*player.speed*dt*2.35;
+        if(player.type==='piranha' || player.type==='crayfish'){
+          player.vy += iy*player.speed*dt*2.05;
+        }
       }
       enemyAI(dt);
       player.update(dt);enemy.update(dt);
