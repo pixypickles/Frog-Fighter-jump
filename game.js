@@ -2845,8 +2845,8 @@
 
     catfishCharges.forEach(n=>{
       if(n.hit || !n.owner || n.owner===z.owner) return;
-      const headX=n.x+Math.sign(n.vx||1)*58;
-      if(Math.hypot(headX-z.x,n.y-z.y)<z.r+58){
+      const headX=n.x;
+      if(Math.hypot(headX-z.x,n.y-z.y)<z.r+52){
         n.hit=true; n.t=0;
         spawnImpact(headX,n.y,'guard');
       }
@@ -2983,18 +2983,25 @@
     const other=f.isPlayer?enemy:player;
     if(!other) return false;
     f.specialType='catfishCall'; f.specialT=.65; f.attackT=.30;
-    // リリスさん自身の背後から現れて、そのまま相手方向へ突進。
+    // 地上版：リリスさんの背後側・画面最上部から出現し、
+    // カマと羽根を大きく広げた縦長姿勢のまま対角線へ急降下する。
     const attackDir=f.face;
-    const behindX=f.x-attackDir*105;
-    const spawnX=Math.max(72,Math.min(innerWidth-72,behindX));
+    const behindX=f.x-attackDir*78;
+    const spawnX=Math.max(54,Math.min(innerWidth-54,behindX));
+    const targetX=Math.max(50,Math.min(innerWidth-50,other.x));
+    const targetY=Math.max(innerHeight*.48,Math.min(groundY()-42,other.y+32));
+    const dx=targetX-spawnX, dy=Math.max(180,targetY-44);
+    const len=Math.hypot(dx,dy)||1;
+    const speed=455;
 
     catfishCharges.push({
       owner:f,
       target:other,
       x:spawnX,
-      y:Math.max(90,Math.min(innerHeight-90,f.y+8)),
-      vx:attackDir*345,
-      t:1.75,
+      y:44,
+      vx:dx/len*speed,
+      vy:dy/len*speed,
+      t:1.65,
       hit:false
     });
     comboEl.textContent='カマキリ突進!';
@@ -5180,17 +5187,18 @@ function drawBackground(dt){
       catfishCharges.forEach(n=>{
         n.t-=dt;
         const target=n.target;
-        // 地上版カマキリ：短い横幅に合わせ、回避可能な範囲で相手を追尾。
+        // 急降下中だけ弱く追尾。軌道の主役は「上端→斜め下」の対角線。
         if(target){
-          const desiredDir=Math.sign(target.x-n.x)||Math.sign(n.vx)||1;
-          const desiredVx=desiredDir*365;
-          const steer=520*dt;
+          const dx=target.x-n.x, dy=(target.y+28)-n.y;
+          const len=Math.hypot(dx,dy)||1;
+          const desiredVx=dx/len*455, desiredVy=Math.max(245,dy/len*455);
+          const steer=210*dt;
           n.vx += Math.max(-steer,Math.min(steer,desiredVx-n.vx));
-          const dy=target.y-n.y;
-          n.y += Math.max(-125*dt,Math.min(125*dt,dy*1.7*dt));
+          n.vy += Math.max(-steer,Math.min(steer,desiredVy-n.vy));
         }
         n.x+=n.vx*dt;
-        if(!n.hit && target && Math.hypot(target.x-(n.x+Math.sign(n.vx)*55),target.y-n.y)<target.radius+72){
+        n.y+=(n.vy||360)*dt;
+        if(!n.hit && target && Math.hypot(target.x-n.x,target.y-n.y)<target.radius+55){
           n.hit=true;
           if(projectileImmuneByBubble(target)){
             spawnImpact(target.x,target.y,'guard');
@@ -5577,13 +5585,35 @@ function drawBackground(dt){
       ctx.restore();
     });
 
-    // リリスさんの召喚：カマキリが高速で突進。
+    // リリスさんの召喚：カマと羽根を広げた縦長カマキリが上空から急降下。
     catfishCharges.forEach(n=>{
-      ctx.save();ctx.translate(n.x,n.y);if(n.vx<0)ctx.scale(-1,1);
-      ctx.strokeStyle='#4b7d2a';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-25,5);ctx.lineTo(-58,30);ctx.moveTo(-10,8);ctx.lineTo(-32,38);ctx.moveTo(5,7);ctx.lineTo(28,34);ctx.stroke();
-      ctx.fillStyle='#76a936';ctx.beginPath();ctx.ellipse(-18,0,52,17,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8fc748';ctx.beginPath();ctx.moveTo(20,-8);ctx.lineTo(58,-18);ctx.lineTo(48,8);ctx.closePath();ctx.fill();
-      ctx.strokeStyle='#6b9d31';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(24,-3);ctx.lineTo(58,-42);ctx.lineTo(72,-25);ctx.moveTo(25,4);ctx.lineTo(62,38);ctx.lineTo(75,20);ctx.stroke();
-      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(48,-8,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(50,-8,2.5,0,Math.PI*2);ctx.fill();ctx.restore();
+      ctx.save();ctx.translate(n.x,n.y);
+      const diveAngle=Math.atan2(n.vy||1,n.vx||0)-Math.PI/2;
+      ctx.rotate(diveAngle);
+      // 半透明の左右の羽根
+      ctx.fillStyle='rgba(205,245,170,.58)';
+      ctx.beginPath();ctx.ellipse(-22,-6,18,43,-.38,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(22,-6,18,43,.38,0,Math.PI*2);ctx.fill();
+      // 縦長の胴体
+      ctx.fillStyle='#76a936';ctx.beginPath();ctx.ellipse(0,12,13,47,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#8fc748';ctx.beginPath();ctx.ellipse(0,-35,18,17,0,0,Math.PI*2);ctx.fill();
+      // 大きく左右へ開いた鎌
+      ctx.strokeStyle='#5f922c';ctx.lineWidth=8;ctx.lineCap='round';
+      ctx.beginPath();
+      ctx.moveTo(-8,-25);ctx.lineTo(-37,-53);ctx.lineTo(-54,-35);
+      ctx.moveTo(8,-25);ctx.lineTo(37,-53);ctx.lineTo(54,-35);
+      ctx.stroke();
+      // 脚も縦シルエットを崩さない程度に展開
+      ctx.strokeStyle='#4b7d2a';ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(-8,4);ctx.lineTo(-31,23);ctx.lineTo(-39,42);
+      ctx.moveTo(8,4);ctx.lineTo(31,23);ctx.lineTo(39,42);
+      ctx.moveTo(-7,25);ctx.lineTo(-25,48);
+      ctx.moveTo(7,25);ctx.lineTo(25,48);
+      ctx.stroke();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-7,-39,4.5,0,Math.PI*2);ctx.arc(7,-39,4.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-7,-40,2.2,0,Math.PI*2);ctx.arc(7,-40,2.2,0,Math.PI*2);ctx.fill();
+      ctx.restore();
     });
 
     // 水底の土煙も描画フェーズへ移動
