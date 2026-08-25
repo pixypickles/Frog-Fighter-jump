@@ -309,7 +309,7 @@
     ],
     purple:[
       'リボンラッシュ：舌 ×3',
-      'ナマズさん突進：後ろ ＋ ガード ×2',
+      'カマキリ突進：後ろ ＋ ガード ×2',
       'バックスピンキック：後ろ ＋ キック（追加入力で追加回転）'
     ],
     yellow:[
@@ -317,7 +317,6 @@
       'エアカッター：↓ → ＋ キック（前＋斜め下）',
       'ウィンドライズ：↓ ↑ ＋ パンチ',
       'エアブースト：↑ ＋ ガード',
-      'ヒーリングバブル：後ろ ＋ ガード ×2'
     ],
     orange:[
       'ホワイトカウンター：方向キー1回転 ＋ ガード',
@@ -807,11 +806,7 @@
     }
     update(dt) {
       if (this.stun>0) this.stun-=dt;
-      if(this.healT>0){
-        this.healT-=dt;
-        this.hp=Math.min(100,this.hp+3.2*dt);
-        if(this.isPlayer) updateHud();
-      }
+      if(this.healT>0){ this.healT=Math.max(0,this.healT-dt); }
       if(this.counterT>0){
         this.counterT-=dt;
         if(this.counterT<=0) this.counterReady=false;
@@ -1846,21 +1841,6 @@
         ctx.restore();
       }
 
-      // ラファエルさん：回復中は小さな泡が身体の周囲を上昇
-      if(this.type==='yellow' && this.healT>0){
-        ctx.save();
-        ctx.strokeStyle='#d9fbff';
-        ctx.lineWidth=2;
-        ctx.globalAlpha=.65;
-        const tm=performance.now()/220;
-        for(let i=0;i<5;i++){
-          const bx=Math.sin(tm+i*1.7)*28;
-          const by=48-((tm*13+i*23)%100);
-          ctx.beginPath();ctx.arc(bx,by,3+(i%3),0,Math.PI*2);ctx.stroke();
-        }
-        ctx.restore();
-      }
-
       // ウリエルさん：ガード長押しで蓄えた薄い全身ホワイトオーラ
       if(this.type==='orange' && this.urielAuraT>0){
         ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -2642,10 +2622,9 @@
         '後ろ ＋ キック：バックスピンキック（キック追加入力で追加回転）'
       ],
       yellow:[
-        '↓ → ＋ パンチ：水圧カッター（真横）',
-        '↓ → ＋ キック：水圧カッター（約15°下）',
-        '後ろ ＋ ガード×2：ヒーリングバブル',
-        '反時計回り1回転 ＋ ガード：エアブースト（敵が右の場合）'
+        '↓ → ＋ パンチ：エアカッター（前＋斜め上）',
+        '↓ → ＋ キック：エアカッター（斜め下＋真下）',
+        '↑ ＋ ガード：エアブースト'
       ],
       orange:[
         'スティック1回転 ＋ ガード：ホワイトカウンター',
@@ -3532,7 +3511,7 @@
     f.attackT=.42;
 
     const speed=355;
-    const angles = source==='punch' ? [0,-24] : [0,24];
+    const angles = source==='punch' ? [0,-24] : [38,90];
     const yOffset=source==='punch' ? -10 : 24;
 
     angles.forEach((deg,i)=>{
@@ -3602,14 +3581,6 @@
       if(comboEl.textContent==='エアブースト!') comboEl.textContent='';
     },720);
     clearCommand();
-    return true;
-  }
-
-  function specialHealingBubble(f){
-    if(gameOver || f.stun>0 || f.specialT>0 || f.healT>0) return false;
-    f.guard=false; f.specialType='healingBubble'; f.specialT=.55; f.healT=4.8;
-    comboEl.textContent='ヒーリングバブル!';
-    setTimeout(()=>{if(comboEl.textContent==='ヒーリングバブル!')comboEl.textContent='';},720);
     return true;
   }
 
@@ -4339,20 +4310,6 @@
             if(specialRaphaelBubbleMove(player)){
               btn.classList.remove('pressed');
               return;
-            }
-          }
-
-          // ラファエルさん：後ろ＋ガード×2で徐々に回復
-          if(player.type==='yellow' && !player.throwState){
-            const now=performance.now();
-            const backNow=(player.face>0 && input.x<-.35)||(player.face<0 && input.x>.35);
-            input._raphaelGuardTimes=(input._raphaelGuardTimes||[]).filter(t=>now-t<720);
-            if(backNow){
-              input._raphaelGuardTimes.push(now);
-              if(input._raphaelGuardTimes.length>=2){
-                input._raphaelGuardTimes=[];
-                if(specialHealingBubble(player)){btn.classList.remove('pressed');return;}
-              }
             }
           }
 
@@ -5221,8 +5178,18 @@ function drawBackground(dt){
       aquaTornadoes=aquaTornadoes.filter(t=>t.t>0);
 
       catfishCharges.forEach(n=>{
-        n.t-=dt; n.x+=n.vx*dt;
+        n.t-=dt;
         const target=n.target;
+        // 地上版カマキリ：短い横幅に合わせ、回避可能な範囲で相手を追尾。
+        if(target){
+          const desiredDir=Math.sign(target.x-n.x)||Math.sign(n.vx)||1;
+          const desiredVx=desiredDir*365;
+          const steer=520*dt;
+          n.vx += Math.max(-steer,Math.min(steer,desiredVx-n.vx));
+          const dy=target.y-n.y;
+          n.y += Math.max(-125*dt,Math.min(125*dt,dy*1.7*dt));
+        }
+        n.x+=n.vx*dt;
         if(!n.hit && target && Math.hypot(target.x-(n.x+Math.sign(n.vx)*55),target.y-n.y)<target.radius+72){
           n.hit=true;
           if(projectileImmuneByBubble(target)){
