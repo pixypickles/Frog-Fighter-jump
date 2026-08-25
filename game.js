@@ -2786,7 +2786,7 @@
     resize();
 
     showStoryNarrative([
-      '仕事に疲れた河津一郎は、帰り道、ぼんやりと池を眺めていた。\n\n水の中を泳ぐ一匹のカエル。\n\n「……あいつらは呑気でいいよな」',
+      '仕事に疲れた河津一郎は、帰り道、ぼんやりと田んぼを眺めていた。\n\n田んぼのあぜを高く跳ぶ一匹のカエル。\n\n「……あいつらは呑気でいいよな」',
       'しばらく眺めているうちに、ふと思う。\n\n「いや、待てよ……」\n\n「あいつらはあいつらで、厳しい世界を生き抜いているのかもしれない」',
       '河津一郎は妄想し始めた――。'
     ],()=>startGame('story',storyQueue[0]));
@@ -3018,8 +3018,8 @@
       t:1.75,
       hit:false
     });
-    comboEl.textContent='ナマズさん突進!';
-    setTimeout(()=>{if(comboEl.textContent==='ナマズさん突進!')comboEl.textContent='';},800);
+    comboEl.textContent='カマキリ突進!';
+    setTimeout(()=>{if(comboEl.textContent==='カマキリ突進!')comboEl.textContent='';},800);
     return true;
   }
 
@@ -3299,26 +3299,11 @@
 
   function specialVenomWater(f){
     if(gameOver || !f || f.stun>0 || f.specialT>0 || f.bossSpecialCooldown>0) return false;
-    f.guard=false;
-    f.specialType='venomWater';
-    f.specialT=.68;
-    f.bossSpecialCooldown=2.4;
-
-    toxicWaters.push({
-      owner:f,
-      t:5.4,
-      life:5.4,
-      tick:0,
-      // v6.34: ベルゼブブ本人を中心に毒煙が広がる。
-      originX:f.x,
-      originY:f.y,
-      seed:Math.random()*1000
-    });
-
-    comboEl.textContent='ヴェノム・ウォーター!';
-    setTimeout(()=>{if(comboEl.textContent==='ヴェノム・ウォーター!')comboEl.textContent='';},800);
-    clearCommand();
-    return true;
+    f.guard=false; f.specialType='venomWater'; f.specialT=.68; f.bossSpecialCooldown=2.4;
+    toxicWaters.push({owner:f,t:5.4,life:5.4,tick:0,x:f.x+f.face*38,y:f.y-20,vx:f.face*55,vy:40,r:25,landed:false,seed:Math.random()*1000});
+    comboEl.textContent='ヴェノム・ドロップ!';
+    setTimeout(()=>{if(comboEl.textContent==='ヴェノム・ドロップ!')comboEl.textContent='';},800);
+    clearCommand(); return true;
   }
 
   function specialFishRaid(f){
@@ -3348,8 +3333,8 @@
       });
     }
 
-    comboEl.textContent='フィッシュ・レイド!';
-    setTimeout(()=>{if(comboEl.textContent==='フィッシュ・レイド!')comboEl.textContent='';},800);
+    comboEl.textContent='ビー・レイド!';
+    setTimeout(()=>{if(comboEl.textContent==='ビー・レイド!')comboEl.textContent='';},800);
     clearCommand();
     return true;
   }
@@ -4078,8 +4063,8 @@
         f.attack='tongue';
         f.attackT=.28;
 
-        // 2回目の舌は、相手を自分の後方へ回転させながら投げ飛ばす。
-        const throwDir = -f.face;
+        // Ground 0.5: 2回目の舌は真下への叩きつけ。
+        const throwDir = f.face;
 
         // 連続舌投げ時に前回の回転状態を引き継がない
         target.throwState=null;
@@ -4087,16 +4072,16 @@
 
         target.throwState={
           owner:f,
-          spinSpeed: throwDir*15,
-          endT:.72,
+          spinSpeed: f.face*13,
+          endT:.58,
           noWallDamage:false
         };
         target.hurtFace='both';
         target.hurtFaceT=.7;
 
-        // 少し上向きに放り、後方の壁へ叩きつけやすくする。
-        target.vx = throwDir*720;
-        target.vy = -115;
+        // 横へはほぼ動かさず、強く真下へ叩きつける。
+        target.vx = f.vx*.12;
+        target.vy = 980;
 
         target.stun=.55;
         f.tonguePullTarget=null;
@@ -4241,9 +4226,9 @@
             : `STORY CLEAR!　カワズさん解禁!`;
           restartButton.hidden=true;
           showStoryNarrative([
-            '激闘の末、ベルゼブブさんは倒れた。\n\n……\n\n池を眺めていた河津一郎は、我に返った。',
-            '河津一郎「……俺も、負けちゃいられないな」\n\n一郎は立ち上がった。\n\nそして――\n\n池に飛び込んだ。\n\nポチャン。',
-            '水かきのついた手足で、水中を勢いよく進んでいく河津一郎。\n\n河津一郎の小さな緑色の体は、水を切るように泳いだ。\nその速さは、池のどのカエルにも負けていなかった。',
+            '激闘の末、ベルゼブブさんは倒れた。\n\n……\n\n田んぼを眺めていた河津一郎は、我に返った。',
+            '河津一郎「……俺も、負けちゃいられないな」\n\n一郎は立ち上がった。\n\nそして――\n\n思いきり地面を蹴って、高く跳んだ。\n\nぴょーん。',
+            '力強い後ろ脚で、空へ勢いよく跳び上がっていく河津一郎。\n\n河津一郎の小さな緑色の体は、田んぼの上を軽々と舞った。\nその跳躍力は、田んぼのどのカエルにも負けていなかった。',
             '河津一郎――いや、\n\nカワズさん参戦！！'
           ],()=>{restartButton.hidden=false;});
         }else{
@@ -4940,19 +4925,16 @@ function drawBackground(dt){
 
       toxicWaters.forEach(v=>{
         v.t-=dt;
-        v.tick-=dt;
-        const target=v.owner && v.owner.isPlayer ? enemy : player;
-        if(target && v.tick<=0){
-          v.tick=.48;
-          // 紫の水の間、相手だけ。ガードし続けていれば無傷。
-          if(!target.guard){
-            v.owner._projectileHit=true;
-            damageHit(v.owner,target,1.45*v.owner.damageMul,0,0);
-            v.owner._projectileHit=false;
-          }
+        if(!v.landed){
+          v.vy+=LAND_GRAVITY*1.05*dt; v.x+=v.vx*dt; v.y+=v.vy*dt;
+          const floor=landGroundTop()-8;
+          if(v.y>=floor){v.y=floor;v.vx=0;v.vy=0;v.landed=true;v.r=48;v.tick=0;spawnImpact(v.x,v.y,'hit');}
+        }else{
+          v.tick-=dt; const target=v.owner&&v.owner.isPlayer?enemy:player;
+          if(target&&v.tick<=0&&Math.hypot(target.x-v.x,target.y-v.y)<target.radius+v.r+18){v.tick=.48;if(!target.guard){v.owner._projectileHit=true;damageHit(v.owner,target,1.65*v.owner.damageMul,0,-18);v.owner._projectileHit=false;}}
         }
       });
-      toxicWaters=toxicWaters.filter(v=>v.t>0);
+      toxicWaters=toxicWaters.filter(v=>v.t>0&&v.x>-100&&v.x<innerWidth+100);
 
       bossFish.forEach(fish=>{
         fish.t-=dt;
@@ -5472,89 +5454,16 @@ function drawBackground(dt){
     }
 
     toxicWaters.forEach(v=>{
-      // v6.34:
-      // 土煙のようにベルゼブブから紫の毒が一気に広がる。
-      // 発動直後 -> 画面がほぼ見えない濃さ -> その後は薄い毒水として残る。
-      const age=v.life-v.t;
-      const spread=Math.min(1,age/.82);
-      const denseIn=Math.min(1,age/.48);
-      const denseOut=age<1.45 ? 1 : Math.max(0,1-(age-1.45)/1.05);
-      const dense=denseIn*denseOut;
-      const linger=Math.max(0,Math.min(1,v.t/1.0));
-      const ox=Number.isFinite(v.originX)?v.originX:(v.owner?v.owner.x:innerWidth/2);
-      const oy=Number.isFinite(v.originY)?v.originY:(v.owner?v.owner.y:innerHeight/2);
-      const maxR=Math.hypot(innerWidth,innerHeight)*1.15;
-      const now=performance.now()/1000;
-
-      ctx.save();
-
-      // 中心から外へ膨らむ巨大な紫煙。
-      const grad=ctx.createRadialGradient(ox,oy,0,ox,oy,maxR*spread);
-      grad.addColorStop(0,`rgba(91,12,119,${0.76*dense + 0.18*linger})`);
-      grad.addColorStop(.45,`rgba(119,24,157,${0.72*dense + 0.15*linger})`);
-      grad.addColorStop(.82,`rgba(159,41,196,${0.64*dense + 0.10*linger})`);
-      grad.addColorStop(1,'rgba(116,18,150,0)');
-      ctx.fillStyle=grad;
-      ctx.beginPath();
-      ctx.arc(ox,oy,maxR*spread,0,Math.PI*2);
-      ctx.fill();
-
-      // 土煙感のある塊。発生源から外側へ拡散。
-      for(let i=0;i<28;i++){
-        const ang=(i*2.3999632297)+(v.seed||0);
-        const lane=.18+((i*37)%83)/100;
-        const rr=maxR*spread*lane;
-        const wobble=Math.sin(now*1.7+i*2.1)*18;
-        const x=ox+Math.cos(ang)*rr+wobble;
-        const y=oy+Math.sin(ang)*rr*.72+Math.cos(now*1.3+i)*14;
-        const rad=38+(i%7)*13+spread*34;
-        ctx.globalAlpha=(.08+.22*dense)*Math.min(1,spread*2.4);
-        ctx.fillStyle=i%3===0?'#d84cff':(i%3===1?'#71118f':'#9d27bd');
-        ctx.beginPath();
-        ctx.arc(x,y,rad,0,Math.PI*2);
-        ctx.fill();
-      }
-
-      // 一度だけ「ほぼ見えない」ピークを作る。
-      if(dense>.05){
-        ctx.globalAlpha=.78*dense;
-        ctx.fillStyle='#4b075f';
-        ctx.fillRect(0,0,innerWidth,innerHeight);
-        ctx.globalAlpha=.25*dense;
-        ctx.fillStyle='#c83ff0';
-        ctx.fillRect(0,0,innerWidth,innerHeight);
-      }
-
-      // ピーク後は従来より薄い紫の水だけが残る。
-      const thin=Math.max(0,Math.min(1,(age-1.6)/.9))*linger;
-      if(thin>0){
-        ctx.globalAlpha=.15*thin;
-        ctx.fillStyle='#7d24a8';
-        ctx.fillRect(0,0,innerWidth,innerHeight);
-      }
+      ctx.save();ctx.translate(v.x,v.y);
+      if(!v.landed){ctx.fillStyle='rgba(128,35,160,.88)';ctx.beginPath();ctx.ellipse(0,0,v.r*.72,v.r,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(211,93,235,.45)';ctx.beginPath();ctx.arc(-6,-7,v.r*.28,0,Math.PI*2);ctx.fill();}
+      else{const a=Math.max(.25,Math.min(1,v.t/1.2));ctx.globalAlpha=a;ctx.fillStyle='rgba(111,24,139,.72)';ctx.beginPath();ctx.ellipse(0,3,v.r*1.25,v.r*.35,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.22*a;ctx.fillStyle='#c94be7';for(let i=0;i<5;i++){ctx.beginPath();ctx.arc((i-2)*13,-8-(i%2)*8,10+i%2*4,0,Math.PI*2);ctx.fill();}}
       ctx.restore();
     });
 
     bossFish.forEach(fish=>{
-      ctx.save();
-      ctx.translate(fish.x,fish.y);
-      // 元の魚絵は左向き（頭が左、尾が右）。
-      // 右へ泳ぐ時だけ反転し、常に進行方向へ頭を向ける。
-      if(fish.vx>0) ctx.scale(-1,1);
-      ctx.fillStyle='#72c75d';
-      ctx.beginPath();
-      ctx.ellipse(0,0,fish.r*1.25,fish.r*.72,0,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle='#e64b38';
-      ctx.beginPath();
-      ctx.moveTo(fish.r*.7,0);
-      ctx.lineTo(fish.r*1.7,-fish.r*.7);
-      ctx.lineTo(fish.r*1.7,fish.r*.7);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle='#fff';
-      ctx.beginPath();ctx.arc(-fish.r*.45,-2,2.5,0,Math.PI*2);ctx.fill();
-      ctx.restore();
+      ctx.save();ctx.translate(fish.x,fish.y);if(fish.vx<0)ctx.scale(-1,1);
+      ctx.fillStyle='rgba(225,245,255,.72)';ctx.beginPath();ctx.ellipse(-5,-9,9,5,-.45,0,Math.PI*2);ctx.ellipse(-5,9,9,5,.45,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#f2c230';ctx.beginPath();ctx.ellipse(0,0,fish.r*1.15,fish.r*.72,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#332b20';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-4,-fish.r*.6);ctx.lineTo(-4,fish.r*.6);ctx.moveTo(5,-fish.r*.55);ctx.lineTo(5,fish.r*.55);ctx.stroke();ctx.fillStyle='#332b20';ctx.beginPath();ctx.moveTo(-fish.r*1.05,0);ctx.lineTo(-fish.r*1.55,-4);ctx.lineTo(-fish.r*1.55,4);ctx.closePath();ctx.fill();ctx.restore();
     });
 
     abyssShocks.forEach(w=>{
@@ -5701,72 +5610,13 @@ function drawBackground(dt){
       ctx.restore();
     });
 
-    // ナマズさん：リリスさんの後ろから突進する、細長いナマズ
+    // リリスさんの召喚：カマキリが高速で突進。
     catfishCharges.forEach(n=>{
-      ctx.save();
-      ctx.translate(n.x,n.y);
-      if(n.vx<0) ctx.scale(-1,1);
-
-      // 長い胴体
-      ctx.fillStyle='#46535a';
-      ctx.beginPath();
-      ctx.ellipse(-10,0,92,28,0,0,Math.PI*2);
-      ctx.fill();
-
-      // 平たい頭
-      ctx.fillStyle='#64777d';
-      ctx.beginPath();
-      ctx.ellipse(66,0,43,25,0,0,Math.PI*2);
-      ctx.fill();
-
-      // 尾びれ
-      ctx.fillStyle='#3f4a50';
-      ctx.beginPath();
-      ctx.moveTo(-95,0);
-      ctx.lineTo(-128,-27);
-      ctx.lineTo(-118,0);
-      ctx.lineTo(-128,27);
-      ctx.closePath();
-      ctx.fill();
-
-      // 背びれ
-      ctx.fillStyle='#56666c';
-      ctx.beginPath();
-      ctx.moveTo(-28,-25);
-      ctx.lineTo(0,-45);
-      ctx.lineTo(18,-24);
-      ctx.closePath();
-      ctx.fill();
-
-      // 目
-      ctx.fillStyle='#fff';
-      ctx.beginPath();
-      ctx.arc(79,-8,5,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle='#111';
-      ctx.beginPath();
-      ctx.arc(80,-8,2.5,0,Math.PI*2);
-      ctx.fill();
-
-      // 口
-      ctx.strokeStyle='#29343a';
-      ctx.lineWidth=3;
-      ctx.beginPath();
-      ctx.moveTo(93,5);
-      ctx.lineTo(111,7);
-      ctx.stroke();
-
-      // 長いヒゲ
-      ctx.strokeStyle='#8da0a5';
-      ctx.lineWidth=3;
-      ctx.lineCap='round';
-      ctx.beginPath();
-      ctx.moveTo(91,0); ctx.quadraticCurveTo(128,-14,154,-3);
-      ctx.moveTo(91,4); ctx.quadraticCurveTo(130,20,158,10);
-      ctx.moveTo(83,-1); ctx.quadraticCurveTo(118,-32,144,-29);
-      ctx.stroke();
-
-      ctx.restore();
+      ctx.save();ctx.translate(n.x,n.y);if(n.vx<0)ctx.scale(-1,1);
+      ctx.strokeStyle='#4b7d2a';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-25,5);ctx.lineTo(-58,30);ctx.moveTo(-10,8);ctx.lineTo(-32,38);ctx.moveTo(5,7);ctx.lineTo(28,34);ctx.stroke();
+      ctx.fillStyle='#76a936';ctx.beginPath();ctx.ellipse(-18,0,52,17,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8fc748';ctx.beginPath();ctx.moveTo(20,-8);ctx.lineTo(58,-18);ctx.lineTo(48,8);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#6b9d31';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(24,-3);ctx.lineTo(58,-42);ctx.lineTo(72,-25);ctx.moveTo(25,4);ctx.lineTo(62,38);ctx.lineTo(75,20);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(48,-8,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(50,-8,2.5,0,Math.PI*2);ctx.fill();ctx.restore();
     });
 
     // 水底の土煙も描画フェーズへ移動

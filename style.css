@@ -1677,3 +1677,22 @@ body.portrait-play .punch{right:25% !important;bottom:0 !important}
 body.portrait-play .kick{right:0 !important;bottom:23% !important}
 body.portrait-play .tongue{right:50% !important;bottom:23% !important}
 body.portrait-play .guard{right:25% !important;bottom:46% !important}
+
+
+/* Ground prototype 0.6: visible build number during battle */
+.battle-version{
+  position:absolute;
+  top:max(42px,calc(env(safe-area-inset-top) + 38px));
+  left:50%;
+  transform:translateX(-50%);
+  z-index:7;
+  pointer-events:none;
+  padding:2px 8px;
+  border-radius:999px;
+  background:rgba(0,55,70,.22);
+  color:rgba(255,255,255,.72);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-shadow:0 1px 2px rgba(0,0,0,.3);
+}
