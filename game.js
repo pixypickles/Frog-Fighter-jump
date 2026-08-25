@@ -94,11 +94,11 @@
   const LAND_AUTO_JUMP_SPEED = 880;
   const LAND_HORIZONTAL_DRAG = .22;
 
-  // Ground prototype 0.3: keep the soil as a compact control zone without
-  // sacrificing too much of the tall aerial fighting space. Drawing and
-  // collision share the same ground line.
+  // Ground prototype 0.4: lower the soil again so the tall sky stays dominant.
+  // The guard button may protrude slightly above the soil; drawing and collision
+  // still share the exact same ground line.
   function landGroundDepth(){
-    return Math.min(270, Math.max(170, innerHeight * .185));
+    return Math.min(235, Math.max(145, innerHeight * .155));
   }
   function landGroundTop(){
     return innerHeight - landGroundDepth();
@@ -313,10 +313,11 @@
       'バックスピンキック：後ろ ＋ キック（追加入力で追加回転）'
     ],
     yellow:[
-      '水圧カッター：↓ → ＋ パンチ（真横）',
-      '水圧カッター：↓ → ＋ キック（約15°下）',
-      'ヒーリングバブル：後ろ ＋ ガード ×2',
-      'エアブースト：反時計回り1回転 ＋ ガード'
+      'エアカッター：↓ → ＋ パンチ（前＋斜め上）',
+      'エアカッター：↓ → ＋ キック（前＋斜め下）',
+      'ウィンドライズ：↓ ↑ ＋ パンチ',
+      'エアブースト：↑ ＋ ガード',
+      'ヒーリングバブル：後ろ ＋ ガード ×2'
     ],
     orange:[
       'ホワイトカウンター：方向キー1回転 ＋ ガード',
@@ -1053,6 +1054,16 @@
               if(hitDist < other.radius + 31){
                 this.specialHitDone=true;
                 damageHit(this,other,10.0*this.damageMul,240*this.face,-35);
+              }
+            }
+          }else if(this.specialType==='raphaelWindRise'){
+            const active=this.specialT<=.56 && this.specialT>=.10;
+            if(active){
+              const hx=this.x+this.face*24;
+              const hy=this.y-18;
+              if(Math.hypot(other.x-hx,other.y-hy)<other.radius+42){
+                this.specialHitDone=true;
+                damageHit(this,other,7.4*this.damageMul,95*this.face,-185);
               }
             }
           }
@@ -1793,6 +1804,25 @@
           ctx.quadraticCurveTo(-22,-5+i*24,30,4+i*24);
           ctx.stroke();
         }
+        ctx.restore();
+      }
+
+      if(this.type==='yellow' && this.specialType==='raphaelWindRise'){
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle='rgba(238,253,255,.88)';
+        ctx.lineWidth=4;
+        ctx.globalAlpha=.72;
+        for(let i=0;i<3;i++){
+          ctx.beginPath();
+          ctx.arc(0,22,34+i*11,-2.75,.55);
+          ctx.stroke();
+        }
+        ctx.globalAlpha=.48;
+        ctx.beginPath();
+        ctx.moveTo(-34,58); ctx.quadraticCurveTo(-12,32,18,5);
+        ctx.moveTo(2,66); ctx.quadraticCurveTo(18,36,38,16);
+        ctx.stroke();
         ctx.restore();
       }
 
@@ -3516,25 +3546,46 @@
     f.attack=source==='kick' ? 'kick' : (source==='punch' ? 'punch' : null);
     f.attackT=.42;
 
-    const speed=350;
-    const rad=angleDeg*Math.PI/180;
-    const yOffset=source==='punch' ? -10 : (source==='kick' ? 28 : 2);
+    const speed=355;
+    const angles = source==='punch' ? [0,-24] : [0,24];
+    const yOffset=source==='punch' ? -10 : 24;
 
-    pressureBlades.push({
-      owner:f,
-      x:f.x+f.face*68,
-      y:f.y+yOffset,
-      vx:f.face*Math.cos(rad)*speed,
-      vy:Math.sin(rad)*speed,
-      t:1.25,
-      life:1.25,
-      hit:false,
-      size:1.0,
-      angle:rad
+    angles.forEach((deg,i)=>{
+      const rad=deg*Math.PI/180;
+      pressureBlades.push({
+        owner:f,
+        x:f.x+f.face*(66+i*5),
+        y:f.y+yOffset,
+        vx:f.face*Math.cos(rad)*speed,
+        vy:Math.sin(rad)*speed,
+        t:1.25,
+        life:1.25,
+        hit:false,
+        size:.92,
+        angle:rad
+      });
     });
 
-    comboEl.textContent='水圧カッター!';
-    setTimeout(()=>{if(comboEl.textContent==='水圧カッター!')comboEl.textContent='';},900);
+    comboEl.textContent='エアカッター!';
+    setTimeout(()=>{if(comboEl.textContent==='エアカッター!')comboEl.textContent='';},900);
+    return true;
+  }
+
+  function specialRaphaelWindRise(f){
+    if(gameOver || f.stun>0 || f.guard || f.throwState || f.specialT>0) return false;
+    const other=f.isPlayer?enemy:player;
+    const toward=other ? Math.sign(other.x-f.x)||f.face : f.face;
+    f.guard=false;
+    f.specialType='raphaelWindRise';
+    f.specialT=.62;
+    f.attack='punch';
+    f.attackT=.62;
+    f.specialHitDone=false;
+    f.vx=toward*235;
+    f.vy=-760;
+    comboEl.textContent='ウィンドライズ!';
+    setTimeout(()=>{if(comboEl.textContent==='ウィンドライズ!')comboEl.textContent='';},760);
+    clearCommand();
     return true;
   }
 
@@ -3822,6 +3873,12 @@
       const forward=f.face>0?'right':'left';
       const downForward=f.face>0?'downRight':'downLeft';
 
+      // 地上版追加技：↓ ↑ ＋パンチで、風をまとい敵方向へ斜め上昇。
+      if(kind==='punch' && hasCommand(['down','up'],760)){
+        clearCommand();
+        return specialRaphaelWindRise(f);
+      }
+
       const pressureCommand =
         hasCommand(['down',forward],900) ||
         hasCommand(['down',downForward],900) ||
@@ -3829,8 +3886,7 @@
 
       if(pressureCommand && (kind==='punch' || kind==='kick')){
         clearCommand();
-        if(kind==='punch') return specialPressureBlade(f,0,'punch');
-        return specialPressureBlade(f,15,'kick');
+        return specialPressureBlade(f,0,kind);
       }
     }
 
@@ -4292,8 +4348,9 @@
             }
           }
 
-          // ラファエルさん：敵が右なら反時計回り1回転＋ガードでエアブースト
-          if(player.type==='yellow' && !player.throwState && hasFacingCircle(player,false,1150)){
+          // ラファエルさん：地上版は「上＋ガード」で即エアブースト。
+          // 縦画面では1回転入力の余裕が少ないため、空中機動を主力として簡略化。
+          if(player.type==='yellow' && !player.throwState && input.y<-.35){
             if(specialRaphaelBubbleMove(player)){
               btn.classList.remove('pressed');
               return;
@@ -4776,7 +4833,7 @@ function drawBackground(dt){
 
 
 
-      // ラファエルさんの水圧カッター更新
+      // ラファエルさんのエアカッター更新
       if(leafMiniActive){
         leafMiniTime-=dt;
         leafSpawnTimer-=dt;

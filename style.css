@@ -1658,20 +1658,22 @@ body.portrait-play #titleScreen.active{display:flex}
 body.portrait-play .title-start-actions{justify-content:center}
 
 
-/* Ground prototype 0.3: compact soil, clearly separated action buttons. */
+/* Ground prototype 0.4: lower soil and a tighter, larger four-button cluster. */
 body.portrait-play .buttons{
   right:max(8px,env(safe-area-inset-right)) !important;
-  bottom:max(8px,env(safe-area-inset-bottom)) !important;
-  width:min(52vw,260px) !important;
-  height:min(18.5vh,170px) !important;
+  bottom:max(6px,env(safe-area-inset-bottom)) !important;
+  width:min(47vw,235px) !important;
+  height:min(17.5vh,160px) !important;
+  overflow:visible !important;
 }
 body.portrait-play .action{
-  width:clamp(50px,13vw,60px) !important;
-  height:clamp(50px,13vw,60px) !important;
-  font-size:clamp(11px,3.1vw,16px) !important;
+  width:clamp(62px,16vw,72px) !important;
+  height:clamp(62px,16vw,72px) !important;
+  font-size:clamp(12px,3.4vw,17px) !important;
 }
-/* Diamond layout with visibly separated centres. */
-body.portrait-play .punch{right:34% !important;bottom:0 !important}
-body.portrait-play .kick{right:0 !important;bottom:32% !important}
-body.portrait-play .tongue{right:68% !important;bottom:32% !important}
-body.portrait-play .guard{right:34% !important;bottom:64% !important}
+/* Compact diamond: buttons nearly touch, but no longer form one merged blob.
+   Guard is intentionally allowed to protrude slightly above the soil. */
+body.portrait-play .punch{right:25% !important;bottom:0 !important}
+body.portrait-play .kick{right:0 !important;bottom:23% !important}
+body.portrait-play .tongue{right:50% !important;bottom:23% !important}
+body.portrait-play .guard{right:25% !important;bottom:46% !important}

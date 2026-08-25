@@ -1007,3 +1007,11 @@ Current version: **6.49**
 - Ground collision/landing follows the new visual ground height.
 - Widened the action-button layout area, reduced button size slightly, and moved all four centres farther apart so overlap is visibly reduced.
 - Kept joystick and action controls inside the ground zone on typical portrait phones.
+
+
+## Ground prototype 0.4
+- 地面の高さを約15.5%へ下げ、縦長の空中戦スペースを拡大。
+- 4ボタンを再拡大し、0.3より近い菱形配置へ。ガードは地面から少しはみ出してよい設計。
+- ラファエル：エアブーストを「↑＋ガード」に簡略化。
+- ラファエル：エアカッター（パンチ）は前＋斜め上の2枚、キックは前＋斜め下の2枚。
+- ラファエル：新技「ウィンドライズ」追加。↓↑＋パンチで、風をまとって敵方向へ斜め上昇。
