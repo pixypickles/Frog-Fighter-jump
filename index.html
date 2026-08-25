@@ -15,7 +15,7 @@
       <h1>フロッグファイタージャンプ</h1>
       <p class="subtitle">地上でいちばん強いヤツを決めろ！</p>
       <p class="rotate-note">スマホ縦持ち専用・地上バトル試作版</p>
-      <div class="start-version">FROG FIGHTER JUMP / v1.5</div>
+      <div class="start-version">FROG FIGHTER JUMP / v1.6</div>
       <div class="title-start-actions">
         <button id="portraitStart" class="soft-btn portrait-start-btn">はじめる</button>
         <button id="desktopStart" class="soft-btn" hidden>はじめる</button>
@@ -25,7 +25,7 @@
 
     <section id="selectScreen" class="screen">
       <h2>ファイターをえらぶ</h2>
-      <div class="version-badge">FROG FIGHTER JUMP / v1.5</div>
+      <div class="version-badge">FROG FIGHTER JUMP / v1.6</div>
       <div class="fighter-grid">
         <button class="fighter-card selected" data-fighter="green">
           <span class="fighter-emoji" style="--frog-body:#35d851;--frog-eye-bump:#69e86e;--frog-iris:#173126;--frog-mouth:#146030;--frog-cheek:#d7b774;position:absolute;left:18px;top:50%;transform:translateY(-50%);--frog-eye-area:#ffffff;">🐸</span>
@@ -66,16 +66,24 @@
         <button class="fighter-card" data-fighter="piranha">
           <span class="fighter-emoji creature-emoji azazel-card-icon" aria-hidden="true">
 <svg viewBox="0 0 100 82" role="img" aria-label="アザゼルさんの顔">
-  <!-- オニヤンマ系の黒＋黄。正面顔で大きな緑の複眼 -->
-  <ellipse cx="50" cy="48" rx="34" ry="27" fill="#171717"/>
-  <path d="M21 42 H79" stroke="#f2d928" stroke-width="8"/>
-  <path d="M29 61 H71" stroke="#f2d928" stroke-width="7"/>
-  <ellipse cx="30" cy="31" rx="22" ry="25" fill="#32b79c" stroke="#111" stroke-width="4"/>
-  <ellipse cx="70" cy="31" rx="22" ry="25" fill="#32b79c" stroke="#111" stroke-width="4"/>
-  <ellipse cx="25" cy="24" rx="6" ry="9" fill="rgba(255,255,255,.55)"/>
-  <ellipse cx="65" cy="24" rx="6" ry="9" fill="rgba(255,255,255,.55)"/>
-  <path d="M39 53 Q50 62 61 53" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <path d="M30 68 L19 78 M70 68 L81 78" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+  <!-- 正面のオニヤンマ風の顔。大きな複眼だけでなく、頭部と黄色い模様をしっかり見せる -->
+  <path d="M22 17 Q50 3 78 17 L86 45 Q82 70 50 76 Q18 70 14 45 Z"
+        fill="#1b1b1b" stroke="#101010" stroke-width="3"/>
+  <!-- 額の黄色 -->
+  <path d="M39 11 Q50 7 61 11 L66 20 Q50 17 34 20 Z" fill="#f2d928"/>
+  <!-- 緑の複眼 -->
+  <ellipse cx="31" cy="34" rx="22" ry="25" fill="#20bfa8" stroke="#111" stroke-width="4"/>
+  <ellipse cx="69" cy="34" rx="22" ry="25" fill="#20bfa8" stroke="#111" stroke-width="4"/>
+  <ellipse cx="26" cy="27" rx="6" ry="10" fill="rgba(255,255,255,.38)"/>
+  <ellipse cx="64" cy="27" rx="6" ry="10" fill="rgba(255,255,255,.38)"/>
+  <!-- 目の間の黒い鼻筋 -->
+  <path d="M46 19 Q50 25 54 19 L57 47 Q50 53 43 47 Z" fill="#151515"/>
+  <!-- オニヤンマらしい黄色い口元 -->
+  <path d="M28 52 Q50 46 72 52 L68 62 Q50 66 32 62 Z" fill="#f2d928" stroke="#111" stroke-width="2"/>
+  <path d="M35 64 Q50 70 65 64" stroke="#f2d928" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M40 58 Q50 62 60 58" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- 短い触角／顎のシルエット -->
+  <path d="M27 63 L16 75 M73 63 L84 75" stroke="#171717" stroke-width="5" stroke-linecap="round"/>
 </svg></span>
           <strong>アザゼルさん</strong>
         
@@ -161,7 +169,7 @@
 
     <section id="gameScreen" class="screen game-screen">
       <canvas id="gameCanvas"></canvas>
-      <div class="battle-version">v1.5</div>
+      <div class="battle-version">v1.6</div>
       <div id="storyNarrative" class="story-narrative" hidden>
         <div class="story-narrative-box">
           <div id="storyNarrativeText" class="story-narrative-text"></div>
