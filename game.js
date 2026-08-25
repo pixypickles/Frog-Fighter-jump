@@ -70,6 +70,7 @@
   let siltClouds = [];
   let webTraps = [];
   let ceilingWebs = [];
+  let belialPoisonShots = [];
   let catfishCharges = [];
   let pressureBlades = [];
   let burstWaves = [];
@@ -117,7 +118,7 @@
     yellow:  { speed: 190, tongue: 225, damage: 0.92, defense:0.96, sink:4, hue:0, scale:1.00 },
     orange:  { speed: 142, tongue: 215, damage: 1.05, defense:1.28, sink:9, hue:0, scale:1.10 },
     piranha: { speed: 198, tongue: 0,   damage: 1.08, defense:0.90, sink:3, hue:0, scale:0.95 },
-    crayfish:{ speed: 138, tongue: 210, damage: 1.18, defense:1.20, sink:10,hue:0, scale:1.08 },
+    crayfish:{ speed: 138, tongue: 0,   damage: 1.18, defense:1.20, sink:10,hue:0, scale:1.08 },
     beelzebub:{speed: 158, tongue: 415, damage: 1.28, defense:1.22, sink:8, hue:0, scale:1.13},
     kawazu: {speed: 220, tongue: 225, damage: 0.94, defense:0.94, sink:4, hue:0, scale:0.86}
   };
@@ -1238,12 +1239,25 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          const reach=18+14*(1-bite);
+          // v1.7: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
-          ctx.strokeStyle='rgba(243,215,45,.45)';ctx.lineWidth=7;
-          ctx.beginPath();ctx.moveTo(43,-2);ctx.quadraticCurveTo(59+reach,-6,77+reach,-2);ctx.quadraticCurveTo(64+reach,1,52,1);ctx.stroke();
-          ctx.strokeStyle='#f3d72d';ctx.lineWidth=9;
-          ctx.beginPath();ctx.moveTo(43,4);ctx.quadraticCurveTo(60+reach,9,79+reach,4);ctx.quadraticCurveTo(65+reach,0,52,0);ctx.stroke();
+
+          // 黄色い縁取りを先に太く描く。
+          ctx.strokeStyle='#f3d72d';
+          ctx.lineWidth=8;
+          ctx.beginPath();
+          ctx.moveTo(43,-3);ctx.quadraticCurveTo(49+reach,-6,56+reach,-2);
+          ctx.moveTo(43,4);ctx.quadraticCurveTo(49+reach,7,56+reach,3);
+          ctx.stroke();
+
+          // 本体の顎は黒。
+          ctx.strokeStyle='#111';
+          ctx.lineWidth=5;
+          ctx.beginPath();
+          ctx.moveTo(43,-3);ctx.quadraticCurveTo(49+reach,-6,56+reach,-2);
+          ctx.moveTo(43,4);ctx.quadraticCurveTo(49+reach,7,56+reach,3);
+          ctx.stroke();
         }
 
         ctx.restore();
@@ -2248,7 +2262,7 @@
     }));
 
     particles=[]; hitRings=[]; guardWaves=[]; aquaTornadoes=[]; aquaVortices=[];
-    siltClouds=[]; webTraps=[]; ceilingWebs=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
+    siltClouds=[]; webTraps=[]; ceilingWebs=[]; belialPoisonShots=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
 
     for(let i=0;i<12;i++){
       spawnLeafTarget(i,true);
@@ -2583,7 +2597,7 @@
         '↓ ↑ ＋ キック：後ろ寄りへ急降下'
       ],
       crayfish:[
-        '舌：糸で捕獲 → もう一度舌で真下へ叩きつけ',
+        '舌：毒液を前方へ飛ばす',
         'パンチ×3：多脚ラッシュ',
         '↑ ↓ ＋ キック：ウェブトラップ',
         '↓ ↑ ＋ パンチ：セイリング・ウェブ'
@@ -2633,7 +2647,7 @@
 
   function resetBattleEffects(){
     particles=[]; hitRings=[]; guardWaves=[]; aquaTornadoes=[]; aquaVortices=[];
-    siltClouds=[]; webTraps=[]; ceilingWebs=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
+    siltClouds=[]; webTraps=[]; ceilingWebs=[]; belialPoisonShots=[]; catfishCharges=[]; pressureBlades=[]; burstWaves=[];
     leafTargets=[]; guardTargets=[]; toxicWaters=[]; bossFish=[]; abyssShocks=[]; kawazuShots=[]; kawazuGhosts=[];
   }
 
@@ -3918,6 +3932,27 @@
         setTimeout(()=>damageHit(f,other,5.2*f.damageMul,142*dir,ky),175);
       }
     } else if(kind==='tongue'){
+      // ベリアル：舌ボタンは蜘蛛糸ではなく毒液を飛ばす通常攻撃。
+      if(f.type==='crayfish'){
+        playSfx('tongue');
+        f.attack='belialPoisonSpit';
+        f.attackT=.34;
+        const aimY=Math.max(-.34,Math.min(.34,(other.y-f.y)/260));
+        const speed=470;
+        belialPoisonShots.push({
+          owner:f,
+          x:f.x+f.face*34,
+          y:f.y-7,
+          vx:f.face*speed,
+          vy:aimY*speed,
+          r:10,
+          t:1.35,
+          life:1.35,
+          hit:false
+        });
+        return;
+      }
+
       // 自分が舌で引き寄せられている最中に舌を押すと「投げ抜け」。
       // お互いの舌が伸びたままになり、投げには移行せず中央へ接近する。
       const puller = f.isPlayer ? enemy : player;
@@ -4976,7 +5011,44 @@ function drawBackground(dt){
         if(basketMiniTime<=0){basketMiniTime=0;endBasketMiniGame();}
       }
 
-      kawazuShots.forEach(p=>{
+      belialPoisonShots.forEach(p=>{
+        p.t-=dt;
+        p.x+=p.vx*dt;
+        p.y+=p.vy*dt;
+        p.vy+=LAND_GRAVITY*.22*dt;
+        const target=p.owner&&p.owner.isPlayer?enemy:player;
+        if(!p.hit&&target&&Math.hypot(target.x-p.x,target.y-p.y)<target.radius+p.r){
+          p.hit=true;
+          damageHit(p.owner,target,3.0*p.owner.damageMul,48*Math.sign(p.vx),22);
+          // 毒液らしく短い追加ダメージを残す。
+          const victim=target, owner=p.owner;
+          let ticks=3;
+          const poisonTick=setInterval(()=>{
+            if(gameOver||!victim||victim.hp<=0||ticks--<=0){clearInterval(poisonTick);return;}
+            damageHit(owner,victim,.55*owner.damageMul,0,0,true);
+          },260);
+        }
+      });
+      belialPoisonShots=belialPoisonShots.filter(p=>p.t>0&&!p.hit&&p.x>-50&&p.x<innerWidth+50&&p.y>-50&&p.y<innerHeight+60);
+
+      belialPoisonShots.forEach(p=>{
+      const a=Math.max(0,p.t/p.life);
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.globalAlpha=.92*a;
+      ctx.fillStyle='#91d63b';
+      ctx.strokeStyle='#3d611b';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.ellipse(0,0,p.r+4,p.r*.78,Math.atan2(p.vy,p.vx),0,Math.PI*2);
+      ctx.fill();ctx.stroke();
+      ctx.globalAlpha=.55*a;
+      ctx.fillStyle='#d9ff72';
+      ctx.beginPath();ctx.arc(-3,-3,3,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    });
+
+    kawazuShots.forEach(p=>{
         p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
         const target=p.owner&&p.owner.isPlayer?enemy:player;
         if(!p.hit&&target&&Math.hypot(target.x-p.x,target.y-p.y)<target.radius+p.r){
