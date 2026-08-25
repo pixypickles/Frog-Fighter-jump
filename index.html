@@ -6,16 +6,7 @@
   <meta name="theme-color" content="#0b6f7a" />
   <title>フロッグファイタージャンプ</title>
   <link rel="stylesheet" href="style.css" />
-<style>
-.azazel-card-icon,.belial-card-icon{position:absolute!important;left:26px;top:50%;transform:translateY(-50%);width:116px;height:92px}
-.azazel-card-icon:before{content:"";position:absolute;left:12px;top:40px;width:88px;height:12px;background:repeating-linear-gradient(90deg,#171717 0 13px,#f2d928 13px 19px);border-radius:50% 8px 8px 50%}
-.azazel-card-icon:after{content:"";position:absolute;left:80px;top:31px;width:27px;height:27px;background:#222;border-radius:50%;box-shadow:12px 1px 0 -5px #38b7a4}
-.azazel-card-icon i:before,.azazel-card-icon i:after{content:"";position:absolute;left:42px;width:54px;height:17px;border:2px solid rgba(220,245,250,.9);background:rgba(200,235,245,.45);border-radius:70%}
-.azazel-card-icon i:before{top:20px;transform:rotate(-22deg)}.azazel-card-icon i:after{top:57px;transform:rotate(22deg)}
-.belial-card-icon:before{content:"";position:absolute;left:37px;top:27px;width:49px;height:51px;background:#493854;border-radius:48%}
-.belial-card-icon:after{content:"";position:absolute;left:49px;top:15px;width:31px;height:29px;background:#5b4668;border-radius:50%}
-.belial-card-icon i{position:absolute;left:14px;top:42px;width:94px;height:5px;background:#382a42;box-shadow:0 -19px 0 #382a42,0 19px 0 #382a42;transform:rotate(13deg)}
-</style></head>
+</head>
 <body>
   <div id="app">
     <section id="titleScreen" class="screen active">
@@ -24,7 +15,7 @@
       <h1>フロッグファイタージャンプ</h1>
       <p class="subtitle">地上でいちばん強いヤツを決めろ！</p>
       <p class="rotate-note">スマホ縦持ち専用・地上バトル試作版</p>
-      <div class="start-version">GROUND PROTOTYPE 0.6 / based on 6.49</div>
+      <div class="start-version">FROG FIGHTER JUMP / v1.3</div>
       <div class="title-start-actions">
         <button id="portraitStart" class="soft-btn portrait-start-btn">はじめる</button>
         <button id="desktopStart" class="soft-btn" hidden>はじめる</button>
@@ -34,7 +25,7 @@
 
     <section id="selectScreen" class="screen">
       <h2>ファイターをえらぶ</h2>
-      <div class="version-badge">FROG FIGHTER JUMP / v1.2</div>
+      <div class="version-badge">FROG FIGHTER JUMP / v1.3</div>
       <div class="fighter-grid">
         <button class="fighter-card selected" data-fighter="green">
           <span class="fighter-emoji" style="--frog-body:#35d851;--frog-eye-bump:#69e86e;--frog-iris:#173126;--frog-mouth:#146030;--frog-cheek:#d7b774;position:absolute;left:18px;top:50%;transform:translateY(-50%);--frog-eye-area:#ffffff;">🐸</span>
@@ -73,13 +64,45 @@
           <span class="special-hint move-names">ホワイトカウンター / ガーディアンタックル / ホワイトリーチ</span>
         </button>
         <button class="fighter-card" data-fighter="piranha">
-          <span class="fighter-emoji creature-emoji azazel-card-icon"><i></i></span>
+          <span class="fighter-emoji creature-emoji azazel-card-icon" aria-hidden="true">
+<svg viewBox="0 0 150 100" role="img" aria-label="トンボ">
+  <g class="az-wing" fill="rgba(220,245,250,.62)" stroke="rgba(235,252,255,.95)" stroke-width="2">
+    <ellipse cx="73" cy="31" rx="45" ry="11" transform="rotate(-22 73 31)"/>
+    <ellipse cx="74" cy="68" rx="45" ry="11" transform="rotate(22 74 68)"/>
+    <ellipse cx="91" cy="35" rx="35" ry="9" transform="rotate(18 91 35)"/>
+    <ellipse cx="91" cy="64" rx="35" ry="9" transform="rotate(-18 91 64)"/>
+  </g>
+  <path d="M72 50 L18 50" stroke="#151515" stroke-width="13" stroke-linecap="round"/>
+  <path d="M60 44 L60 56 M46 44 L46 56 M32 44 L32 56" stroke="#f2d928" stroke-width="5"/>
+  <path d="M18 50 L5 50" stroke="#151515" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="84" cy="50" rx="21" ry="17" fill="#171717"/>
+  <path d="M75 35 V65 M88 34 V66" stroke="#f2d928" stroke-width="6"/>
+  <circle cx="111" cy="49" r="17" fill="#242424"/>
+  <ellipse cx="120" cy="47" rx="11" ry="14" fill="#36b6a2"/>
+  <circle cx="123" cy="42" r="3" fill="rgba(255,255,255,.7)"/>
+  <path d="M91 61 L105 78 L108 88 M82 62 L88 82 L84 91 M73 60 L63 79 L60 89" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg></span>
           <strong>アザゼルさん</strong>
         
           <span class="special-hint move-names">追尾連続噛みつき / 急降下アタック / 急降下テール</span>
         </button>
         <button class="fighter-card" data-fighter="crayfish">
-          <span class="fighter-emoji creature-emoji belial-card-icon"><i></i></span>
+          <span class="fighter-emoji creature-emoji belial-card-icon" aria-hidden="true">
+<svg viewBox="0 0 140 110" role="img" aria-label="クモ">
+  <path d="M70 0 C70 16 70 24 70 34" stroke="rgba(250,253,250,.95)" stroke-width="3" fill="none"/>
+  <ellipse cx="70" cy="66" rx="29" ry="32" fill="#44354f"/>
+  <ellipse cx="70" cy="43" rx="21" ry="18" fill="#5a4568"/>
+  <g stroke="#33263c" stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M53 48 L26 31 L8 24"/><path d="M49 57 L23 49 L4 48"/>
+    <path d="M49 68 L23 76 L6 88"/><path d="M54 79 L31 94 L20 106"/>
+    <path d="M87 48 L114 31 L132 24"/><path d="M91 57 L117 49 L136 48"/>
+    <path d="M91 68 L117 76 L134 88"/><path d="M86 79 L109 94 L120 106"/>
+  </g>
+  <g fill="#e9efe9">
+    <circle cx="61" cy="40" r="3.5"/><circle cx="69" cy="37" r="3.5"/><circle cx="78" cy="40" r="3.5"/>
+    <circle cx="64" cy="47" r="3"/><circle cx="75" cy="47" r="3"/>
+  </g>
+</svg></span>
           <strong>ベリアルさん</strong>
         
           <span class="special-hint move-names">多脚ラッシュ / ウェブトラップ / セイリング・ウェブ</span>
@@ -143,7 +166,7 @@
 
     <section id="gameScreen" class="screen game-screen">
       <canvas id="gameCanvas"></canvas>
-      <div class="battle-version">v1.2</div>
+      <div class="battle-version">v1.3</div>
       <div id="storyNarrative" class="story-narrative" hidden>
         <div class="story-narrative-box">
           <div id="storyNarrativeText" class="story-narrative-text"></div>
