@@ -117,7 +117,7 @@
     yellow:  { speed: 190, tongue: 225, damage: 0.92, defense:0.96, sink:4, hue:0, scale:1.00 },
     orange:  { speed: 142, tongue: 215, damage: 1.05, defense:1.28, sink:9, hue:0, scale:1.10 },
     piranha: { speed: 198, tongue: 0,   damage: 1.08, defense:0.90, sink:3, hue:0, scale:0.95 },
-    crayfish:{ speed: 138, tongue: 225,   damage: 1.18, defense:1.20, sink:10,hue:0, scale:1.08 },
+    crayfish:{ speed: 138, tongue: 210, damage: 1.18, defense:1.20, sink:10,hue:0, scale:1.08 },
     beelzebub:{speed: 158, tongue: 415, damage: 1.28, defense:1.22, sink:8, hue:0, scale:1.13},
     kawazu: {speed: 220, tongue: 225, damage: 0.94, defense:0.94, sink:4, hue:0, scale:0.86}
   };
@@ -332,7 +332,6 @@
       '急降下②：↓ ↑ ＋ キック'
     ],
     crayfish:[
-      '糸キャッチ：舌（捕獲中にもう一度舌で真下へ叩きつけ）',
       '多脚ラッシュ：パンチ ×3',
       'ウェブトラップ：↑ ↓ ＋ キック',
       'セイリング・ウェブ：↓ ↑ ＋ パンチ'
@@ -1239,7 +1238,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          const reach=8+7*(1-bite);
+          const reach=18+14*(1-bite);
           ctx.lineCap='round';
           ctx.strokeStyle='rgba(243,215,45,.45)';ctx.lineWidth=7;
           ctx.beginPath();ctx.moveTo(43,-2);ctx.quadraticCurveTo(59+reach,-6,77+reach,-2);ctx.quadraticCurveTo(64+reach,1,52,1);ctx.stroke();
@@ -1326,6 +1325,30 @@
           ctx.moveTo(17,22);ctx.lineTo(52+kick,38);ctx.lineTo(81+kick,31);
           ctx.moveTo(10,31);ctx.lineTo(44+kick,55);ctx.lineTo(74+kick,52);
           ctx.stroke();
+        }
+
+        // ベリアルの舌ボタン＝カエルの舌と同じ性能。ただし見た目は白い蜘蛛糸。
+        if(this.tongueT>0 || (this.tonguePullTarget && this.tonguePullTimer>0) || (this.tongueClashTarget && this.tongueClashTimer>0)){
+          const target=this.tongueClashTarget || this.tonguePullTarget || (this.isPlayer?enemy:player);
+          if(target){
+            const dx=(target.x-this.x)*this.face;
+            const dy=target.y-this.y;
+            const len=Math.min(this.tongueRange,Math.max(0,dx));
+            const ty=Math.max(-70,Math.min(70,dy));
+            ctx.strokeStyle='rgba(250,253,250,.96)';
+            ctx.lineWidth=4;
+            ctx.lineCap='round';
+            ctx.beginPath();
+            ctx.moveTo(24,-7);
+            ctx.lineTo(len,-7+ty);
+            ctx.stroke();
+
+            // 糸先の小さな粘着輪。
+            ctx.lineWidth=2;
+            ctx.beginPath();
+            ctx.arc(len,-7+ty,7,0,Math.PI*2);
+            ctx.stroke();
+          }
         }
 
         ctx.restore();
@@ -1871,26 +1894,19 @@
       if(this.tongueT>0 || (this.tonguePullTarget && this.tonguePullTimer>0) || (this.tongueClashTarget && this.tongueClashTimer>0)){
         const target = this.tongueClashTarget || this.tonguePullTarget || (this.isPlayer ? enemy : player);
         let len = Math.min(this.tongueRange, Math.abs(target.x-this.x));
-        const isWebTongue=this.type==='crayfish';
-        ctx.strokeStyle=isWebTongue?'rgba(250,253,250,.96)':'#ff718e';
-        ctx.lineWidth=isWebTongue?4:8;
+        ctx.strokeStyle='#ff718e';
+        ctx.lineWidth=8;
         ctx.lineCap='round';
         ctx.beginPath();
+        // 舌だけは口の中央から出す
         ctx.moveTo(0,8);
         if(this.type==='beelzebub'){
           const ty=Math.max(-62,Math.min(62,(target.y-this.y)*.42));
-          ctx.lineTo(len,8+ty);
-        }else if(isWebTongue){
-          const ty=Math.max(-70,Math.min(70,target.y-this.y));
           ctx.lineTo(len,8+ty);
         }else{
           ctx.lineTo(len,8);
         }
         ctx.stroke();
-        if(isWebTongue && target){
-          ctx.strokeStyle='rgba(250,253,250,.78)';ctx.lineWidth=2;
-          ctx.beginPath();ctx.arc(len,8+Math.max(-70,Math.min(70,target.y-this.y)),12,0,Math.PI*2);ctx.stroke();
-        }
       }
 
       if(this.attack==='wave'){
@@ -2567,6 +2583,7 @@
         '↓ ↑ ＋ キック：後ろ寄りへ急降下'
       ],
       crayfish:[
+        '舌：糸で捕獲 → もう一度舌で真下へ叩きつけ',
         'パンチ×3：多脚ラッシュ',
         '↑ ↓ ＋ キック：ウェブトラップ',
         '↓ ↑ ＋ パンチ：セイリング・ウェブ'
@@ -3843,20 +3860,6 @@
       return;
     }
 
-    if(kind==='tongue' && f.type==='crayfish'){
-      playSfx('tongue');
-      f.attack='crayfishStab'; f.attackT=.34;
-      const other=f.isPlayer?enemy:player;
-      setTimeout(()=>{
-        if(!other)return;
-        const dx=(other.x-f.x)*f.face;
-        if(dx>0 && dx<105 && Math.abs(other.y-f.y)<58){
-          damageHit(f,other,4.8*f.damageMul,110*f.face,-5);
-        }
-      },105);
-      return;
-    }
-
     const other = f.isPlayer ? enemy : player;
     const dir=f.face;
     const dist=Math.hypot(other.x-f.x, other.y-f.y);
@@ -3981,7 +3984,7 @@
       f.attackT=.3;
 
       const tongueDy=Math.abs(other.y-f.y);
-      const tongueTolerance=f.type==='beelzebub' ? 145 : (f.type==='crayfish' ? 125 : 82);
+      const tongueTolerance=f.type==='beelzebub' ? 145 : 82;
       if(Math.abs(other.x-f.x)<f.tongueRange && tongueDy<tongueTolerance && Math.sign(other.x-f.x)===dir){
         if(f.type==='beelzebub'){
           // 軽く上下へ追尾するよう、舌を出す瞬間に相手側へ少し寄せる
@@ -3999,9 +4002,8 @@
 
             const dx=f.x-other.x;
             const dy=f.y-other.y;
-            const pullMul=f.type==='crayfish'?1.35:1.8;
-            other.vx += dx*pullMul;
-            other.vy += dy*pullMul;
+            other.vx += dx*1.8;
+            other.vy += dy*1.8;
           } else {
             spawnImpact(other.x,other.y,'guard');
           }
