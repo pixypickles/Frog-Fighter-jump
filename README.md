@@ -1000,3 +1000,10 @@ Current version: **6.49**
 - 従来の回転案内オーバーレイが前面を覆っていたため、そのオーバーレイ内にも開始ボタンを追加
 - 縦画面開始後はオーバーレイを非表示
 - 横持ちで自動開始する従来動作は維持
+
+
+## Ground prototype 0.3
+- Reduced the ground/control zone to about 18.5% of screen height (170–270px clamp), restoring more vertical sky.
+- Ground collision/landing follows the new visual ground height.
+- Widened the action-button layout area, reduced button size slightly, and moved all four centres farther apart so overlap is visibly reduced.
+- Kept joystick and action controls inside the ground zone on typical portrait phones.

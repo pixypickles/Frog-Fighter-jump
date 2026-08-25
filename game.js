@@ -94,10 +94,11 @@
   const LAND_AUTO_JUMP_SPEED = 880;
   const LAND_HORIZONTAL_DRAG = .22;
 
-  // Ground prototype 0.2: thicken the soil so the touch controls visually live
-  // inside the ground. Keep one source of truth for drawing and collision.
+  // Ground prototype 0.3: keep the soil as a compact control zone without
+  // sacrificing too much of the tall aerial fighting space. Drawing and
+  // collision share the same ground line.
   function landGroundDepth(){
-    return Math.min(340, Math.max(220, innerHeight * .24));
+    return Math.min(270, Math.max(170, innerHeight * .185));
   }
   function landGroundTop(){
     return innerHeight - landGroundDepth();
@@ -4733,7 +4734,7 @@ function drawBackground(dt){
       ctx.fill();
     }
 
-    // Thick ground: the touch controls sit visually inside the soil.
+    // Compact ground: controls remain inside the soil while preserving more sky.
     // Collision uses landFloorY(), so the frogs stand on the same top edge we draw here.
     const groundTop=landGroundTop();
     ctx.fillStyle=th.floor;
