@@ -1239,7 +1239,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.1: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.2: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -1906,21 +1906,26 @@
       }
 
       if(this.tongueT>0 || (this.tonguePullTarget && this.tonguePullTimer>0) || (this.tongueClashTarget && this.tongueClashTimer>0)){
-        const target = this.tongueClashTarget || this.tonguePullTarget || (this.isPlayer ? enemy : player);
-        let len = Math.min(this.tongueRange, Math.abs(target.x-this.x));
-        ctx.strokeStyle='#ff718e';
-        ctx.lineWidth=8;
-        ctx.lineCap='round';
-        ctx.beginPath();
-        // 舌だけは口の中央から出す
-        ctx.moveTo(0,8);
-        if(this.type==='beelzebub'){
-          const ty=Math.max(-62,Math.min(62,(target.y-this.y)*.42));
-          ctx.lineTo(len,8+ty);
-        }else{
-          ctx.lineTo(len,8);
+        const target=this.tongueClashTarget || this.tonguePullTarget || (this.isPlayer ? enemy : player);
+        const aim=tongueAutoAim(this,target);
+        if(aim){
+          // ctxはfaceに合わせて左右反転済みなので、world X差分へfaceを掛けてローカル化。
+          const localX=(aim.endWorldX-this.x)*this.face;
+          const localY=aim.endWorldY-this.y;
+          ctx.strokeStyle='#ff718e';
+          ctx.lineWidth=8;
+          ctx.lineCap='round';
+          ctx.beginPath();
+          ctx.moveTo(0,8);
+          ctx.lineTo(localX,localY);
+          ctx.stroke();
+
+          // 舌先を少し太くして、高い位置へ伸びた時も先端を見失いにくくする。
+          ctx.fillStyle='#ff91a8';
+          ctx.beginPath();
+          ctx.arc(localX,localY,5,0,Math.PI*2);
+          ctx.fill();
         }
-        ctx.stroke();
       }
 
       if(this.attack==='wave'){
@@ -3843,6 +3848,37 @@
     return false;
   }
 
+  function tongueAutoAim(f,target){
+    if(!f || !target || !f.tongueRange) return null;
+
+    const mouthX=f.x;
+    const mouthY=f.y+8;
+    const dx=target.x-mouthX;
+    const dy=target.y-mouthY;
+    const dist=Math.hypot(dx,dy)||1;
+
+    const horizontalReach=f.tongueRange;
+    // 縦方向は横より長め。空中のトンボ／クモにも届きやすくする。
+    // ベルゼブブは元の長い基準値415をそのまま使う。
+    const verticalReach=f.tongueRange*(f.type==='beelzebub'?1.32:1.45);
+
+    const ux=dx/dist, uy=dy/dist;
+    const denom=Math.sqrt(
+      (ux*ux)/(horizontalReach*horizontalReach) +
+      (uy*uy)/(verticalReach*verticalReach)
+    ) || 1/horizontalReach;
+    const maxDist=1/denom;
+    const drawDist=Math.min(dist,maxDist);
+
+    return {
+      dx,dy,dist,maxDist,
+      hit:dist<=maxDist+(target.radius||0)*.35,
+      endWorldX:mouthX+ux*drawDist,
+      endWorldY:mouthY+uy*drawDist,
+      verticalReach
+    };
+  }
+
   function attack(f, kind) {
     if(basketMiniActive){
       hockeyStrike(f,kind);
@@ -3992,7 +4028,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.1: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.2: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
@@ -4092,13 +4128,13 @@
       f.attack='tongue';
       f.attackT=.3;
 
-      const tongueDy=Math.abs(other.y-f.y);
-      const tongueTolerance=f.type==='beelzebub' ? 145 : 82;
-      if(Math.abs(other.x-f.x)<f.tongueRange && tongueDy<tongueTolerance && Math.sign(other.x-f.x)===dir){
-        if(f.type==='beelzebub'){
-          // 軽く上下へ追尾するよう、舌を出す瞬間に相手側へ少し寄せる
-          f.bossTongueAimY=(other.y-f.y)*.42;
-        }
+      // 対象方向へ自動補正。左右差が大きい時は舌を出す瞬間に向きも合わせる。
+      if(Math.abs(other.x-f.x)>18){
+        f.face=Math.sign(other.x-f.x)||f.face;
+      }
+
+      const tongueAim=tongueAutoAim(f,other);
+      if(tongueAim && tongueAim.hit){
         setTimeout(()=>{
           if(!other.guard){
             // まず小ダメージ
