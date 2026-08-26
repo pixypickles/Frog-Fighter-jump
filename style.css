@@ -170,7 +170,7 @@ button{font:inherit;color:inherit}
 }
 
 
-/* v2.4: キャラ選択画面は小さい横画面でも下まで見られる */
+/* v2.5: キャラ選択画面は小さい横画面でも下まで見られる */
 #selectScreen.screen.active{
   display:flex;
   overflow-y:auto;
@@ -233,7 +233,7 @@ button{font:inherit;color:inherit}
   line-height:1.35;
 }
 
-/* v2.4: 必殺技名など上部メッセージが途中で切れないようにする */
+/* v2.5: 必殺技名など上部メッセージが途中で切れないようにする */
 #comboText{
   min-width:180px;
   max-width:28vw;
@@ -1698,7 +1698,7 @@ body.portrait-play .guard{right:25% !important;bottom:46% !important}
 }
 
 
-/* v2.4: selection-card creature icons are real SVGs, not legacy fish/crayfish CSS faces. */
+/* v2.5: selection-card creature icons are real SVGs, not legacy fish/crayfish CSS faces. */
 #selectScreen .fighter-card[data-fighter="piranha"] .fighter-emoji,
 #selectScreen .fighter-card[data-fighter="crayfish"] .fighter-emoji{
   position:absolute !important;
@@ -1750,7 +1750,7 @@ body.portrait-play .guard{right:25% !important;bottom:46% !important}
 }
 
 
-/* v2.4: custom creature portraits align with the frog portrait column. */
+/* v2.5: custom creature portraits align with the frog portrait column. */
 #selectScreen .fighter-card[data-fighter="piranha"] .azazel-card-icon,
 #selectScreen .fighter-card[data-fighter="crayfish"] .belial-card-icon{
   left:12px !important;
@@ -1781,7 +1781,7 @@ body.portrait-play .guard{right:25% !important;bottom:46% !important}
 }
 
 
-/* v2.4: アザゼルさんは全身トンボではなく正面の顔。カエル顔と同じアイコン枠。 */
+/* v2.5: アザゼルさんは全身トンボではなく正面の顔。カエル顔と同じアイコン枠。 */
 #selectScreen .fighter-card[data-fighter="piranha"] .azazel-card-icon{
   left:12px !important;
   top:50% !important;
@@ -1797,7 +1797,7 @@ body.portrait-play .guard{right:25% !important;bottom:46% !important}
 }
 
 
-/* v2.4: アザゼル顔を初期の黒＋黄＋緑のデザインに寄せて描き直し。
+/* v2.5: アザゼル顔を初期の黒＋黄＋緑のデザインに寄せて描き直し。
    枠サイズは他キャラと同じまま。 */
 #selectScreen .fighter-card[data-fighter="piranha"] .azazel-card-icon{
   left:12px !important;

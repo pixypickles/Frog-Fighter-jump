@@ -1263,7 +1263,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.4: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.5: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -4130,7 +4130,7 @@
     if(f.type==='crayfish' && kind==='punch'){
       f.attack='crayfishHammer'; f.attackT=.42;
       if(dist<100 && Math.abs(other.y-f.y)<72){
-        setTimeout(()=>damageHit(f,other,5.6*f.damageMul,85*dir,110),150);
+        setTimeout(()=>damageHit(f,other,2.6*f.damageMul,85*dir,110),150);
       }
       return;
     }
@@ -4138,7 +4138,7 @@
     if(f.type==='crayfish' && kind==='kick'){
       f.attack='crayfishUpper'; f.attackT=.44;
       if(dist<100 && Math.abs(other.y-f.y)<78){
-        setTimeout(()=>damageHit(f,other,5.2*f.damageMul,80*dir,-145),155);
+        setTimeout(()=>damageHit(f,other,4.0*f.damageMul,80*dir,-145),155);
       }
       return;
     }
@@ -4170,7 +4170,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.4: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.5: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
