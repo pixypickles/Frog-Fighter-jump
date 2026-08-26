@@ -1239,7 +1239,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v1.9: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.1: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -3265,9 +3265,9 @@
 
     // 地上版：真上＋左右の3方向へ噴水のようにいったん打ち上げてから落下。
     [
-      {vx:-185,vy:-610},
+      {vx:-125,vy:-625},
       {vx:0,   vy:-690},
-      {vx:185, vy:-610}
+      {vx:125, vy:-625}
     ].forEach((v,i)=>{
       toxicWaters.push({
         owner:f,t:5.4,life:5.4,tick:0,
@@ -3991,17 +3991,37 @@
         playSfx('tongue');
         f.attack='belialPoisonSpit';
         f.attackT=.34;
-        const aimY=Math.max(-.34,Math.min(.34,(other.y-f.y)/260));
-        const speed=470;
+
+        // v2.1: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
+        const dx=other.x-f.x;
+        const dy=other.y-f.y;
+        const dist=Math.hypot(dx,dy)||1;
+
+        // 相手方向ベクトル。ただし横成分は少し抑え、下方向を優先。
+        let ax=dx/dist;
+        let ay=dy/dist;
+
+        // 相手が自分より下なら追尾を強める。ほぼ同高度でも少し下向きにする。
+        const downwardBias = dy>35 ? .72 : .48;
+        ay = Math.max(downwardBias, ay);
+
+        // 横幅の狭い縦画面なので、横へ流れすぎないよう圧縮。
+        ax *= .72;
+
+        const norm=Math.hypot(ax,ay)||1;
+        ax/=norm; ay/=norm;
+
+        const speed=445;
         belialPoisonShots.push({
           owner:f,
-          x:f.x+f.face*34,
-          y:f.y-7,
-          vx:f.face*speed,
-          vy:aimY*speed,
+          x:f.x+f.face*28,
+          y:f.y+8,
+          vx:ax*speed,
+          vy:ay*speed,
           r:12,
-          t:1.35,
-          life:1.35,
+          t:1.45,
+          life:1.45,
           hit:false
         });
         return;
@@ -5096,10 +5116,25 @@ function drawBackground(dt){
 
       belialPoisonShots.forEach(p=>{
         p.t-=dt;
+        const target=p.owner&&p.owner.isPlayer?enemy:player;
+
+        // 発射後も弱い自動補正。完全追尾ではなく、上下のズレを直す程度。
+        if(target && !p.hit){
+          const dx=target.x-p.x;
+          const dy=target.y-p.y;
+          const dist=Math.hypot(dx,dy)||1;
+          const desiredX=(dx/dist)*360;
+          const desiredY=Math.max(180,(dy/dist)*430);
+
+          const steerX=190*dt;
+          const steerY=240*dt;
+          p.vx += Math.max(-steerX,Math.min(steerX,desiredX-p.vx));
+          p.vy += Math.max(-steerY,Math.min(steerY,desiredY-p.vy));
+        }
+
         p.x+=p.vx*dt;
         p.y+=p.vy*dt;
-        p.vy+=LAND_GRAVITY*.22*dt;
-        const target=p.owner&&p.owner.isPlayer?enemy:player;
+        p.vy+=LAND_GRAVITY*.18*dt;
         if(!p.hit&&target&&Math.hypot(target.x-p.x,target.y-p.y)<target.radius+p.r){
           p.hit=true;
           const guarded=target.guard;
