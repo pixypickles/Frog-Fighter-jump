@@ -1263,7 +1263,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.3: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.4: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -3757,7 +3757,7 @@
         other.y=floor;
         spawnImpact(other.x,other.y,'hit');
         burstWaves.push({x:other.x,y:floor-8,t:.36,life:.36,radius:14,max:88,power:1});
-        damageHit(f,other,17.0*f.damageMul,75*f.face,-95);
+        damageHit(f,other,24.0*f.damageMul,75*f.face,-95);
         other.spinAngle=0;
         other.stun=Math.max(other.stun,.72);
 
@@ -4170,7 +4170,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.3: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.4: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
@@ -5325,7 +5325,7 @@ function drawBackground(dt){
           p.hit=true;
           const guarded=target.guard;
           p.owner._projectileHit=true;
-          damageHit(p.owner,target,2.45*p.owner.damageMul,42*Math.sign(p.vx),18);
+          damageHit(p.owner,target,1.5*p.owner.damageMul,42*Math.sign(p.vx),18);
           p.owner._projectileHit=false;
           if(!guarded) applyPoisonDot(p.owner,target,3,.38);
         }
