@@ -1239,7 +1239,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v1.7: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v1.8: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -2604,7 +2604,7 @@
       ],
       beelzebub:[
         '舌：通常の約1.5倍リーチ＋軽い上下追尾',
-        '方向キー1回転 ＋ ガード：ヴェノム・ウォーター',
+        '方向キー1回転 ＋ ガード：ヴェノム・ファウンテン',
         '↓ → ＋ パンチ：フィッシュ・レイド',
         '↓ → ＋ キック：アビスショック'
       ],
@@ -3243,12 +3243,43 @@
   }
 
 
+  function applyPoisonDot(owner,target,durationTicks=3,damagePerTick=.55){
+    if(!owner || !target || target.guard) return;
+    let ticks=durationTicks;
+    const timer=setInterval(()=>{
+      // Stop if the battle/target has changed.
+      const stillCurrent = target===player || target===enemy;
+      if(gameOver || !stillCurrent || target.hp<=0 || ticks--<=0){
+        clearInterval(timer);
+        return;
+      }
+      owner._projectileHit=true;
+      damageHit(owner,target,damagePerTick*owner.damageMul,0,0,true);
+      owner._projectileHit=false;
+    },260);
+  }
+
   function specialVenomWater(f){
     if(gameOver || !f || f.stun>0 || f.specialT>0 || f.bossSpecialCooldown>0) return false;
     f.guard=false; f.specialType='venomWater'; f.specialT=.68; f.bossSpecialCooldown=2.4;
-    toxicWaters.push({owner:f,t:5.4,life:5.4,tick:0,x:f.x+f.face*38,y:f.y-20,vx:f.face*55,vy:40,r:25,landed:false,seed:Math.random()*1000});
-    comboEl.textContent='ヴェノム・ドロップ!';
-    setTimeout(()=>{if(comboEl.textContent==='ヴェノム・ドロップ!')comboEl.textContent='';},800);
+
+    // 地上版：真上＋左右の3方向へ噴水のようにいったん打ち上げてから落下。
+    [
+      {vx:-185,vy:-610},
+      {vx:0,   vy:-690},
+      {vx:185, vy:-610}
+    ].forEach((v,i)=>{
+      toxicWaters.push({
+        owner:f,t:5.4,life:5.4,tick:0,
+        x:f.x+(i-1)*10,y:f.y-24,
+        vx:v.vx,vy:v.vy,r:19,
+        landed:false,seed:Math.random()*1000,
+        airHitAt:0
+      });
+    });
+
+    comboEl.textContent='ヴェノム・ファウンテン!';
+    setTimeout(()=>{if(comboEl.textContent==='ヴェノム・ファウンテン!')comboEl.textContent='';},800);
     clearCommand(); return true;
   }
 
@@ -3864,6 +3895,29 @@
       pullerForEscape.tonguePullTarget===f && pullerForEscape.tonguePullTimer>0;
 
     if(!canTongueEscape && (f.stun>0 || f.attackT>0)) return;
+
+    // アザゼルの通常パンチ／キックは、押している方向へ少し移動しながら攻撃。
+    // 上入力なら通常浮遊より速く上昇、斜め入力ならその方向へ滑る。
+    if(f.type==='piranha' && (kind==='punch' || kind==='kick')){
+      let mx=0,my=0;
+      if(f.isPlayer){
+        mx=input.x+(keys['d']?1:0)-(keys['a']?1:0);
+        my=input.y+(keys['s']?1:0)-(keys['w']?1:0);
+      }else{
+        const tgt=f.isPlayer?enemy:player;
+        if(tgt){
+          mx=Math.max(-1,Math.min(1,(tgt.x-f.x)/120));
+          my=Math.max(-1,Math.min(1,(tgt.y-f.y)/120));
+        }
+      }
+      const mag=Math.hypot(mx,my);
+      if(mag>.20){
+        mx/=Math.max(1,mag); my/=Math.max(1,mag);
+        const boost=kind==='punch'?235:205;
+        f.vx+=mx*boost;
+        f.vy+=my*boost;
+      }
+    }
 
     // 非カエル種の舌ボタンは、それぞれ固有の近接攻撃に置換
     if(kind==='tongue' && f.type==='piranha'){
@@ -4811,15 +4865,69 @@ function drawBackground(dt){
       });
       aquaVortices=aquaVortices.filter(v=>v.t>0);
 
-      toxicWaters.forEach(v=>{
+      // ベリアルの毒液弾：小さな紫色の弾。背景描画後の前面レイヤー。
+    belialPoisonShots.forEach(p=>{
+      const a=Math.max(0,p.t/p.life);
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.globalAlpha=.98*a;
+
+      // 濃い紫の縁＋明るい紫の芯で小さくても見えるようにする。
+      ctx.fillStyle='#5a176f';
+      ctx.beginPath();ctx.arc(0,0,p.r+4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#b44bd0';
+      ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#edb6ff';
+      ctx.beginPath();ctx.arc(-3,-4,3,0,Math.PI*2);ctx.fill();
+
+      // 飛行方向の短い尾。
+      const ang=Math.atan2(p.vy,p.vx);
+      ctx.rotate(ang);
+      ctx.strokeStyle='rgba(170,64,204,.55)';
+      ctx.lineWidth=5;
+      ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(-p.r-4,0);ctx.lineTo(-p.r-15,0);ctx.stroke();
+      ctx.restore();
+    });
+
+    toxicWaters.forEach(v=>{
         v.t-=dt;
+        const target=v.owner&&v.owner.isPlayer?enemy:player;
+
         if(!v.landed){
-          v.vy+=LAND_GRAVITY*1.05*dt; v.x+=v.vx*dt; v.y+=v.vy*dt;
+          v.vy+=LAND_GRAVITY*1.05*dt;
+          v.x+=v.vx*dt;
+          v.y+=v.vy*dt;
+
+          // 空中の毒液そのものにも当たり判定。ガード時は継続毒を付与しない。
+          if(target){
+            const now=performance.now();
+            if(Math.hypot(target.x-v.x,target.y-v.y)<target.radius+v.r+7 && now-(v.airHitAt||0)>650){
+              v.airHitAt=now;
+              const guarded=target.guard;
+              v.owner._projectileHit=true;
+              damageHit(v.owner,target,2.0*v.owner.damageMul,22*Math.sign(v.vx||v.owner.face),18);
+              v.owner._projectileHit=false;
+              if(!guarded) applyPoisonDot(v.owner,target,4,.50);
+            }
+          }
+
           const floor=landGroundTop()-8;
-          if(v.y>=floor){v.y=floor;v.vx=0;v.vy=0;v.landed=true;v.r=48;v.tick=0;spawnImpact(v.x,v.y,'hit');}
+          if(v.y>=floor){
+            v.y=floor;v.vx=0;v.vy=0;v.landed=true;
+            v.r=46;v.tick=0;spawnImpact(v.x,v.y,'hit');
+          }
         }else{
-          v.tick-=dt; const target=v.owner&&v.owner.isPlayer?enemy:player;
-          if(target&&v.tick<=0&&Math.hypot(target.x-v.x,target.y-v.y)<target.radius+v.r+18){v.tick=.48;if(!target.guard){v.owner._projectileHit=true;damageHit(v.owner,target,1.65*v.owner.damageMul,0,-18);v.owner._projectileHit=false;}}
+          // 地面に残った毒溜まり。触れ続けると周期ダメージ。
+          v.tick-=dt;
+          if(target&&v.tick<=0&&Math.hypot(target.x-v.x,target.y-v.y)<target.radius+v.r+18){
+            v.tick=.48;
+            const guarded=target.guard;
+            v.owner._projectileHit=true;
+            damageHit(v.owner,target,1.45*v.owner.damageMul,0,-12);
+            v.owner._projectileHit=false;
+            if(!guarded) applyPoisonDot(v.owner,target,2,.38);
+          }
         }
       });
       toxicWaters=toxicWaters.filter(v=>v.t>0&&v.x>-100&&v.x<innerWidth+100);
@@ -5019,36 +5127,17 @@ function drawBackground(dt){
         const target=p.owner&&p.owner.isPlayer?enemy:player;
         if(!p.hit&&target&&Math.hypot(target.x-p.x,target.y-p.y)<target.radius+p.r){
           p.hit=true;
+          const guarded=target.guard;
+          p.owner._projectileHit=true;
           damageHit(p.owner,target,3.0*p.owner.damageMul,48*Math.sign(p.vx),22);
-          // 毒液らしく短い追加ダメージを残す。
-          const victim=target, owner=p.owner;
-          let ticks=3;
-          const poisonTick=setInterval(()=>{
-            if(gameOver||!victim||victim.hp<=0||ticks--<=0){clearInterval(poisonTick);return;}
-            damageHit(owner,victim,.55*owner.damageMul,0,0,true);
-          },260);
+          p.owner._projectileHit=false;
+          if(!guarded) applyPoisonDot(p.owner,target,3,.55);
         }
       });
       belialPoisonShots=belialPoisonShots.filter(p=>p.t>0&&!p.hit&&p.x>-50&&p.x<innerWidth+50&&p.y>-50&&p.y<innerHeight+60);
 
-      belialPoisonShots.forEach(p=>{
-      const a=Math.max(0,p.t/p.life);
-      ctx.save();
-      ctx.translate(p.x,p.y);
-      ctx.globalAlpha=.92*a;
-      ctx.fillStyle='#91d63b';
-      ctx.strokeStyle='#3d611b';
-      ctx.lineWidth=2;
-      ctx.beginPath();
-      ctx.ellipse(0,0,p.r+4,p.r*.78,Math.atan2(p.vy,p.vx),0,Math.PI*2);
-      ctx.fill();ctx.stroke();
-      ctx.globalAlpha=.55*a;
-      ctx.fillStyle='#d9ff72';
-      ctx.beginPath();ctx.arc(-3,-3,3,0,Math.PI*2);ctx.fill();
-      ctx.restore();
-    });
 
-    kawazuShots.forEach(p=>{
+      kawazuShots.forEach(p=>{
         p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
         const target=p.owner&&p.owner.isPlayer?enemy:player;
         if(!p.hit&&target&&Math.hypot(target.x-p.x,target.y-p.y)<target.radius+p.r){
