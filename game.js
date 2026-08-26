@@ -791,6 +791,9 @@
       this.suspendedT=0;
       this.suspendedX=0;
       this.suspendedY=0;
+      this.belialThreadGrow=1;
+      this.belialThreadReconnectT=0;
+      this.kawazuPileTarget=null;
       this.piranhaDivePhase=0;
       this.piranhaDiveTargetX=0;
       this.crayfishRushStep=0;
@@ -875,6 +878,21 @@
         if(this.tongueClashTimer<=0){
           this.tongueClashTimer=0;
           this.tongueClashTarget=null;
+        }
+      }
+
+      // ベリアル：投げ・叩きつけ中は天井糸が切れる。
+      // 復帰後は少し間を置いて、クモから画面上へ糸が伸び直す。
+      if(this.type==='crayfish'){
+        if(this.throwState){
+          this.belialThreadGrow=0;
+          this.belialThreadReconnectT=.28;
+        }else if(this.belialThreadGrow<1){
+          if(this.belialThreadReconnectT>0){
+            this.belialThreadReconnectT=Math.max(0,this.belialThreadReconnectT-dt);
+          }else{
+            this.belialThreadGrow=Math.min(1,this.belialThreadGrow+dt*2.15);
+          }
         }
       }
 
@@ -1114,7 +1132,13 @@
               if(comboEl.textContent==='UKEMI!') comboEl.textContent='';
             },520);
           }else{
-            this.hp=Math.max(0,this.hp-7.0);
+            // 舌の下投げは、高い位置から床へ落としたほど激突ダメージが増える。
+            let impactDamage=7.0;
+            if(hitFloor && this.throwState && this.throwState.tongueSlam){
+              const drop=Math.max(0,this.throwState.dropHeight||0);
+              impactDamage += Math.min(9.0,drop/72);
+            }
+            this.hp=Math.max(0,this.hp-impactDamage);
             this.vx *= -.18;
             this.vy = hitFloor ? -95 : this.vy*.25;
             this.stun=.42;
@@ -1239,7 +1263,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.2: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.3: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -1270,16 +1294,19 @@
         if(this.face<0) ctx.scale(-1,1);
         if(this.flash>0) ctx.globalAlpha=.55;
 
-        // 天井へ続く蜘蛛の糸（画面座標へ戻して描くため現在位置ぶん上へ伸ばす）
-        ctx.save();
-        if(this.face<0) ctx.scale(-1,1);
-        ctx.strokeStyle='rgba(238,244,238,.88)';
-        ctx.lineWidth=2.3;
-        ctx.beginPath();
-        ctx.moveTo(0,-17);
-        ctx.quadraticCurveTo(10,-this.y*.55,0,-this.y);
-        ctx.stroke();
-        ctx.restore();
+        // 天井へ続く蜘蛛の糸。投げられている間は切れ、復帰後に上へ伸び直す。
+        if((this.belialThreadGrow||0)>0 && !this.throwState){
+          const grow=Math.max(0,Math.min(1,this.belialThreadGrow||0));
+          ctx.save();
+          if(this.face<0) ctx.scale(-1,1);
+          ctx.strokeStyle='rgba(238,244,238,.88)';
+          ctx.lineWidth=2.3;
+          ctx.beginPath();
+          ctx.moveTo(0,-17);
+          ctx.quadraticCurveTo(10,-this.y*.55*grow,0,-this.y*grow);
+          ctx.stroke();
+          ctx.restore();
+        }
 
         // 腹部と頭
         ctx.fillStyle='#44354f';
@@ -3652,6 +3679,115 @@
     return taps.length>=2;
   }
 
+  function specialKawazuTonguePiledriver(f){
+    if(gameOver || !f || f.type!=='kawazu' || f.stun>0 || f.specialT>0) return false;
+    const other=f.isPlayer?enemy:player;
+    if(!other) return false;
+
+    // 一回転＋舌は、まず通常の自動照準舌を伸ばす。ヒット時だけ大技へ。
+    if(Math.abs(other.x-f.x)>18) f.face=Math.sign(other.x-f.x)||f.face;
+    const aim=tongueAutoAim(f,other);
+
+    f.attack='tongue';
+    f.attackT=.34;
+    f.tongueT=.34;
+    clearCommand();
+
+    if(!aim || !aim.hit){
+      return true; // 空振り時は特殊演出へ移らない。
+    }
+
+    setTimeout(()=>{
+      if(gameOver || !f || !other || other.guard) return;
+
+      f.specialType='kawazuTonguePiledriver';
+      f.specialT=1.28;
+      f.kawazuPileTarget=other;
+      f.stun=Math.max(f.stun,1.0);
+      other.stun=Math.max(other.stun,1.25);
+      other.attack=null; other.attackT=0;
+      other.specialType=null; other.specialT=0;
+
+      const startX=(f.x+other.x)/2;
+      const startY=Math.max(90,Math.min(f.y,other.y)-20);
+      const floor=landFloorY();
+      const started=performance.now();
+
+      comboEl.textContent='SECRET!';
+      setTimeout(()=>{if(comboEl.textContent==='SECRET!')comboEl.textContent='';},700);
+
+      const timer=setInterval(()=>{
+        if(gameOver || !f || !other){
+          clearInterval(timer);
+          return;
+        }
+
+        const ms=performance.now()-started;
+
+        // 最初に相手を引き寄せ、舌で巻き付ける。
+        if(ms<180){
+          const q=ms/180;
+          other.x=other.x+(startX-other.x)*Math.min(1,.18+q*.20);
+          other.y=other.y+(startY-other.y)*Math.min(1,.18+q*.20);
+          f.x=f.x+(startX-f.x)*Math.min(1,.15+q*.18);
+          f.y=f.y+(startY-f.y)*Math.min(1,.15+q*.18);
+          f.vx=f.vy=other.vx=other.vy=0;
+          return;
+        }
+
+        // 二人とも逆さまになり、相手の頭が少し下になる配置で落下。
+        if(ms<760){
+          const q=(ms-180)/580;
+          const eased=q*q*(3-2*q);
+          const cy=startY+(floor-75-startY)*eased;
+          f.x=startX-10*f.face;
+          other.x=startX+7*f.face;
+          f.y=cy-20;       // 小さいカワズさんは少し上。
+          other.y=cy+18;   // 相手の頭側が先に床へ到達する。
+          f.vx=f.vy=other.vx=other.vy=0;
+          f.spinAngle=Math.PI+.10*Math.sin(q*Math.PI*4);
+          other.spinAngle=Math.PI-.08*Math.sin(q*Math.PI*4);
+          return;
+        }
+
+        clearInterval(timer);
+
+        // 相手の頭だけ先に激突。大ダメージ。
+        other.x=startX+7*f.face;
+        other.y=floor;
+        spawnImpact(other.x,other.y,'hit');
+        burstWaves.push({x:other.x,y:floor-8,t:.36,life:.36,radius:14,max:88,power:1});
+        damageHit(f,other,17.0*f.damageMul,75*f.face,-95);
+        other.spinAngle=0;
+        other.stun=Math.max(other.stun,.72);
+
+        // カワズさんは小さいので直前に舌をほどき、回転しながら逃げる。
+        f.kawazuPileTarget=null;
+        f.specialType='kawazuPileEscape';
+        f.specialT=.48;
+        f.x=startX-32*f.face;
+        f.y=Math.max(100,floor-92);
+        f.vx=-f.face*170;
+        f.vy=-430;
+        f.spinAngle=f.face*.8;
+
+        const escapeStart=performance.now();
+        const escapeTimer=setInterval(()=>{
+          if(!f || gameOver){clearInterval(escapeTimer);return;}
+          const e=(performance.now()-escapeStart)/360;
+          if(e>=1){
+            clearInterval(escapeTimer);
+            f.spinAngle=0;
+            return;
+          }
+          f.spinAngle+=f.face*.42;
+        },32);
+      },16);
+    },70);
+
+    return true;
+  }
+
   function specialKawazuPressureRush(f){
     if(gameOver || f.stun>0 || f.specialT>0)return false;
     f.specialType='kawazuPressureRush';f.specialT=.62;f.attack='punch';f.attackT=.62;
@@ -3724,6 +3860,12 @@
     if(f.type==='kawazu'){
       const forward=f.face>0?'right':'left';
       const downForward=f.face>0?'downRight':'downLeft';
+
+      // 隠し技。意図的にコマンド表には載せない。
+      if(kind==='tongue' && hasFullCircle(1100)){
+        return specialKawazuTonguePiledriver(f);
+      }
+
       if(kind==='kick' && hasFacingCircle(f,true,1000)) return specialKawazuCyclone(f);
       const q=hasCommand(['down',forward],760)||hasCommand(['down',downForward],760)||hasCommand([downForward,forward],760);
       if(q && kind==='punch') return specialKawazuPressureRush(f);
@@ -4028,7 +4170,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.2: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.3: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
@@ -4102,12 +4244,20 @@
         target.throwState=null;
         target.spinAngle=0;
 
+        const tongueDropHeight=Math.max(0,landFloorY()-target.y);
         target.throwState={
           owner:f,
-          spinSpeed: f.face*13,
-          endT:.58,
-          noWallDamage:false
+          spinSpeed:f.face*13,
+          // 高所からでも床まで投げ状態が切れないよう余裕を持たせる。
+          endT:Math.min(1.18,.72+tongueDropHeight/1400),
+          noWallDamage:false,
+          tongueSlam:true,
+          dropHeight:tongueDropHeight
         };
+        if(target.type==='crayfish'){
+          target.belialThreadGrow=0;
+          target.belialThreadReconnectT=.28;
+        }
         target.hurtFace='both';
         target.hurtFaceT=.7;
 
@@ -5175,9 +5325,9 @@ function drawBackground(dt){
           p.hit=true;
           const guarded=target.guard;
           p.owner._projectileHit=true;
-          damageHit(p.owner,target,3.0*p.owner.damageMul,48*Math.sign(p.vx),22);
+          damageHit(p.owner,target,2.45*p.owner.damageMul,42*Math.sign(p.vx),18);
           p.owner._projectileHit=false;
-          if(!guarded) applyPoisonDot(p.owner,target,3,.55);
+          if(!guarded) applyPoisonDot(p.owner,target,3,.38);
         }
       });
       belialPoisonShots=belialPoisonShots.filter(p=>p.t>0&&!p.hit&&p.x>-50&&p.x<innerWidth+50&&p.y>-50&&p.y<innerHeight+60);
@@ -5435,6 +5585,32 @@ function drawBackground(dt){
     ctx.save();
     enemy.draw();
     ctx.restore();
+
+    // カワズ隠し投げ：舌で相手をぐるぐる巻きにしていることを前面に表示。
+    const pileOwner=(player&&player.specialType==='kawazuTonguePiledriver')?player:
+                    ((enemy&&enemy.specialType==='kawazuTonguePiledriver')?enemy:null);
+    if(pileOwner && pileOwner.kawazuPileTarget){
+      const t=pileOwner.kawazuPileTarget;
+      ctx.save();
+      ctx.strokeStyle='#ff718e';
+      ctx.lineWidth=6;
+      ctx.lineCap='round';
+
+      // カワズさんの口から相手へ伸びる舌。
+      ctx.beginPath();
+      ctx.moveTo(pileOwner.x,pileOwner.y+8);
+      ctx.lineTo(t.x,t.y);
+      ctx.stroke();
+
+      // 相手の胴を3周ほど巻く。
+      ctx.lineWidth=5;
+      for(let i=-1;i<=1;i++){
+        ctx.beginPath();
+        ctx.ellipse(t.x,t.y+i*13,Math.max(28,t.radius*.92),15,0,0,Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
     // WATER HOCKEYのマリモは背景・キャラクターの後に描画。
     // update側で描くと次のdrawBackgroundで消えるため、必ずここで表示する。
