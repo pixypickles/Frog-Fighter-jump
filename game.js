@@ -1239,7 +1239,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v1.8: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v1.9: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -3999,7 +3999,7 @@
           y:f.y-7,
           vx:f.face*speed,
           vy:aimY*speed,
-          r:10,
+          r:12,
           t:1.35,
           life:1.35,
           hit:false
@@ -4865,32 +4865,7 @@ function drawBackground(dt){
       });
       aquaVortices=aquaVortices.filter(v=>v.t>0);
 
-      // ベリアルの毒液弾：小さな紫色の弾。背景描画後の前面レイヤー。
-    belialPoisonShots.forEach(p=>{
-      const a=Math.max(0,p.t/p.life);
-      ctx.save();
-      ctx.translate(p.x,p.y);
-      ctx.globalAlpha=.98*a;
-
-      // 濃い紫の縁＋明るい紫の芯で小さくても見えるようにする。
-      ctx.fillStyle='#5a176f';
-      ctx.beginPath();ctx.arc(0,0,p.r+4,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#b44bd0';
-      ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#edb6ff';
-      ctx.beginPath();ctx.arc(-3,-4,3,0,Math.PI*2);ctx.fill();
-
-      // 飛行方向の短い尾。
-      const ang=Math.atan2(p.vy,p.vx);
-      ctx.rotate(ang);
-      ctx.strokeStyle='rgba(170,64,204,.55)';
-      ctx.lineWidth=5;
-      ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(-p.r-4,0);ctx.lineTo(-p.r-15,0);ctx.stroke();
-      ctx.restore();
-    });
-
-    toxicWaters.forEach(v=>{
+      toxicWaters.forEach(v=>{
         v.t-=dt;
         const target=v.owner&&v.owner.isPlayer?enemy:player;
 
@@ -5513,7 +5488,33 @@ function drawBackground(dt){
       });
     }
 
-    toxicWaters.forEach(v=>{
+        // ベリアルの毒液弾：描画フェーズで前面表示。
+    belialPoisonShots.forEach(p=>{
+      const a=Math.max(.35,Math.min(1,p.t/p.life));
+      ctx.save();
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=a;
+      ctx.translate(p.x,p.y);
+
+      ctx.fillStyle='#4b0b62';
+      ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();
+
+      ctx.fillStyle='#9c32c7';
+      ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();
+
+      ctx.fillStyle='#e5a6ff';
+      ctx.beginPath();ctx.arc(-3,-4,3.5,0,Math.PI*2);ctx.fill();
+
+      const ang=Math.atan2(p.vy,p.vx);
+      ctx.rotate(ang);
+      ctx.strokeStyle='rgba(116,27,151,.8)';
+      ctx.lineWidth=6;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(-24,0);ctx.stroke();
+
+      ctx.restore();
+    });
+
+toxicWaters.forEach(v=>{
       ctx.save();ctx.translate(v.x,v.y);
       if(!v.landed){ctx.fillStyle='rgba(128,35,160,.88)';ctx.beginPath();ctx.ellipse(0,0,v.r*.72,v.r,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(211,93,235,.45)';ctx.beginPath();ctx.arc(-6,-7,v.r*.28,0,Math.PI*2);ctx.fill();}
       else{const a=Math.max(.25,Math.min(1,v.t/1.2));ctx.globalAlpha=a;ctx.fillStyle='rgba(111,24,139,.72)';ctx.beginPath();ctx.ellipse(0,3,v.r*1.25,v.r*.35,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.22*a;ctx.fillStyle='#c94be7';for(let i=0;i<5;i++){ctx.beginPath();ctx.arc((i-2)*13,-8-(i%2)*8,10+i%2*4,0,Math.PI*2);ctx.fill();}}
