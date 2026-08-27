@@ -1279,7 +1279,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.7: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.8: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -2625,7 +2625,7 @@
       ],
       purple:[
         '舌×3：リボンラッシュ',
-        '後ろ ＋ ガード×2：ナマズ突進',
+        '後ろ ＋ ガード×2：カマキリ突進',
         '後ろ ＋ キック：バックスピンキック（キック追加入力で追加回転）'
       ],
       yellow:[
@@ -2997,7 +2997,7 @@
     const behindX=f.x-attackDir*78;
     const spawnX=Math.max(54,Math.min(innerWidth-54,behindX));
     const targetX=Math.max(50,Math.min(innerWidth-50,other.x));
-    const targetY=Math.max(innerHeight*.48,Math.min(groundY()-42,other.y+32));
+    const targetY=Math.max(innerHeight*.48,Math.min(landFloorY()-42,other.y+32));
     const dx=targetX-spawnX, dy=Math.max(180,targetY-44);
     const len=Math.hypot(dx,dy)||1;
     const speed=455;
@@ -4186,7 +4186,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.7: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.8: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
@@ -5117,7 +5117,7 @@ function drawBackground(dt){
         }
       }
 
-      // オーラのある拳・脚で水圧カッター／ナマズを打ち消す。
+      // オーラのある拳・脚でエアカッター／カマキリを打ち消す。
       // ガブリエルさんの長い水流は貫通系なので対象外。
       cancelSoftProjectilesByAura();
 
@@ -5660,6 +5660,38 @@ function drawBackground(dt){
     enemy.draw();
     ctx.restore();
 
+    // リリスさんの召喚：カマと羽根を広げた縦長カマキリが上空から急降下。
+    catfishCharges.forEach(n=>{
+      ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.translate(n.x,n.y);
+      const diveAngle=Math.atan2(n.vy||1,n.vx||0)-Math.PI/2;
+      ctx.rotate(diveAngle);
+      // 半透明の左右の羽根
+      ctx.fillStyle='rgba(225,252,190,.78)';
+      ctx.beginPath();ctx.ellipse(-22,-6,18,43,-.38,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(22,-6,18,43,.38,0,Math.PI*2);ctx.fill();
+      // 縦長の胴体
+      ctx.fillStyle='#659a2d';ctx.beginPath();ctx.ellipse(0,12,13,47,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#98c94d';ctx.beginPath();ctx.ellipse(0,-35,18,17,0,0,Math.PI*2);ctx.fill();
+      // 大きく左右へ開いた鎌
+      ctx.strokeStyle='#5f922c';ctx.lineWidth=8;ctx.lineCap='round';
+      ctx.beginPath();
+      ctx.moveTo(-8,-25);ctx.lineTo(-37,-53);ctx.lineTo(-54,-35);
+      ctx.moveTo(8,-25);ctx.lineTo(37,-53);ctx.lineTo(54,-35);
+      ctx.stroke();
+      // 脚も縦シルエットを崩さない程度に展開
+      ctx.strokeStyle='#4b7d2a';ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(-8,4);ctx.lineTo(-31,23);ctx.lineTo(-39,42);
+      ctx.moveTo(8,4);ctx.lineTo(31,23);ctx.lineTo(39,42);
+      ctx.moveTo(-7,25);ctx.lineTo(-25,48);
+      ctx.moveTo(7,25);ctx.lineTo(25,48);
+      ctx.stroke();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-7,-39,4.5,0,Math.PI*2);ctx.arc(7,-39,4.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-7,-40,2.2,0,Math.PI*2);ctx.arc(7,-40,2.2,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    });
+
+
     // カワズ隠し投げ：舌で相手をぐるぐる巻きにしていることを前面に表示。
     const pileOwner=(player&&player.specialType==='kawazuTonguePiledriver')?player:
                     ((enemy&&enemy.specialType==='kawazuTonguePiledriver')?enemy:null);
@@ -5989,37 +6021,6 @@ toxicWaters.forEach(v=>{
       ctx.save();ctx.globalCompositeOperation='lighter';
       ctx.globalAlpha=.58*a;ctx.strokeStyle='#ff3447';ctx.lineWidth=8;ctx.beginPath();ctx.arc(b.x,b.y,rr,0,Math.PI*2);ctx.stroke();
       ctx.globalAlpha=.28*a;ctx.strokeStyle='#ff9a59';ctx.lineWidth=18;ctx.beginPath();ctx.arc(b.x,b.y,rr*.72,0,Math.PI*2);ctx.stroke();
-      ctx.restore();
-    });
-
-    // リリスさんの召喚：カマと羽根を広げた縦長カマキリが上空から急降下。
-    catfishCharges.forEach(n=>{
-      ctx.save();ctx.translate(n.x,n.y);
-      const diveAngle=Math.atan2(n.vy||1,n.vx||0)-Math.PI/2;
-      ctx.rotate(diveAngle);
-      // 半透明の左右の羽根
-      ctx.fillStyle='rgba(205,245,170,.58)';
-      ctx.beginPath();ctx.ellipse(-22,-6,18,43,-.38,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.ellipse(22,-6,18,43,.38,0,Math.PI*2);ctx.fill();
-      // 縦長の胴体
-      ctx.fillStyle='#76a936';ctx.beginPath();ctx.ellipse(0,12,13,47,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#8fc748';ctx.beginPath();ctx.ellipse(0,-35,18,17,0,0,Math.PI*2);ctx.fill();
-      // 大きく左右へ開いた鎌
-      ctx.strokeStyle='#5f922c';ctx.lineWidth=8;ctx.lineCap='round';
-      ctx.beginPath();
-      ctx.moveTo(-8,-25);ctx.lineTo(-37,-53);ctx.lineTo(-54,-35);
-      ctx.moveTo(8,-25);ctx.lineTo(37,-53);ctx.lineTo(54,-35);
-      ctx.stroke();
-      // 脚も縦シルエットを崩さない程度に展開
-      ctx.strokeStyle='#4b7d2a';ctx.lineWidth=5;
-      ctx.beginPath();
-      ctx.moveTo(-8,4);ctx.lineTo(-31,23);ctx.lineTo(-39,42);
-      ctx.moveTo(8,4);ctx.lineTo(31,23);ctx.lineTo(39,42);
-      ctx.moveTo(-7,25);ctx.lineTo(-25,48);
-      ctx.moveTo(7,25);ctx.lineTo(25,48);
-      ctx.stroke();
-      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-7,-39,4.5,0,Math.PI*2);ctx.arc(7,-39,4.5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-7,-40,2.2,0,Math.PI*2);ctx.arc(7,-40,2.2,0,Math.PI*2);ctx.fill();
       ctx.restore();
     });
 
