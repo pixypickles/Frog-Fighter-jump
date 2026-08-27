@@ -311,7 +311,7 @@
     ],
     purple:[
       'リボンラッシュ：舌 ×3',
-      'カマキリ突進：後ろ ＋ ガード ×2',
+      'ゲンゴロウ突進：後ろ ＋ ガード ×2',
       'バックスピンキック：後ろ ＋ キック（追加入力で追加回転）'
     ],
     yellow:[
@@ -1279,7 +1279,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.8: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.9: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -2625,7 +2625,7 @@
       ],
       purple:[
         '舌×3：リボンラッシュ',
-        '後ろ ＋ ガード×2：カマキリ突進',
+        '後ろ ＋ ガード×2：ゲンゴロウ突進',
         '後ろ ＋ キック：バックスピンキック（キック追加入力で追加回転）'
       ],
       yellow:[
@@ -3012,8 +3012,8 @@
       t:1.65,
       hit:false
     });
-    comboEl.textContent='カマキリ突進!';
-    setTimeout(()=>{if(comboEl.textContent==='カマキリ突進!')comboEl.textContent='';},800);
+    comboEl.textContent='ゲンゴロウ突進!';
+    setTimeout(()=>{if(comboEl.textContent==='ゲンゴロウ突進!')comboEl.textContent='';},800);
     return true;
   }
 
@@ -4186,7 +4186,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.8: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.9: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
@@ -5117,7 +5117,7 @@ function drawBackground(dt){
         }
       }
 
-      // オーラのある拳・脚でエアカッター／カマキリを打ち消す。
+      // オーラのある拳・脚でエアカッター／ゲンゴロウを打ち消す。
       // ガブリエルさんの長い水流は貫通系なので対象外。
       cancelSoftProjectilesByAura();
 
@@ -5507,7 +5507,7 @@ function drawBackground(dt){
       catfishCharges.forEach(n=>{
         n.t-=dt;
         const target=n.target;
-        // 急降下中だけ弱く追尾。軌道の主役は「上端→斜め下」の対角線。
+        // ゲンゴロウ突進は弱く追尾。軌道の主役は「上端→斜め下」の対角線。
         if(target){
           const dx=target.x-n.x, dy=(target.y+28)-n.y;
           const len=Math.hypot(dx,dy)||1;
@@ -5660,37 +5660,90 @@ function drawBackground(dt){
     enemy.draw();
     ctx.restore();
 
-    // リリスさんの召喚：カマと羽根を広げた縦長カマキリが上空から急降下。
+    // リリスさんの召喚：ゲンゴロウが上空から斜め下へ飛び込み、水面へ向かっても自然な突進。
     catfishCharges.forEach(n=>{
-      ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.translate(n.x,n.y);
-      const diveAngle=Math.atan2(n.vy||1,n.vx||0)-Math.PI/2;
-      ctx.rotate(diveAngle);
-      // 半透明の左右の羽根
-      ctx.fillStyle='rgba(225,252,190,.78)';
-      ctx.beginPath();ctx.ellipse(-22,-6,18,43,-.38,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.ellipse(22,-6,18,43,.38,0,Math.PI*2);ctx.fill();
-      // 縦長の胴体
-      ctx.fillStyle='#659a2d';ctx.beginPath();ctx.ellipse(0,12,13,47,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#98c94d';ctx.beginPath();ctx.ellipse(0,-35,18,17,0,0,Math.PI*2);ctx.fill();
-      // 大きく左右へ開いた鎌
-      ctx.strokeStyle='#5f922c';ctx.lineWidth=8;ctx.lineCap='round';
+      ctx.save();
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=1;
+      ctx.translate(n.x,n.y);
+
+      // 進行方向へ頭を向ける。ゲンゴロウは横長の楕円体。
+      const ang=Math.atan2(n.vy||1,n.vx||1);
+      ctx.rotate(ang);
+
+      // 後脚の水かき。泳ぐ昆虫らしさを強調。
+      ctx.strokeStyle='#304b24';
+      ctx.lineWidth=5;
+      ctx.lineCap='round';
       ctx.beginPath();
-      ctx.moveTo(-8,-25);ctx.lineTo(-37,-53);ctx.lineTo(-54,-35);
-      ctx.moveTo(8,-25);ctx.lineTo(37,-53);ctx.lineTo(54,-35);
+      ctx.moveTo(-20,8);ctx.lineTo(-45,25);ctx.lineTo(-59,22);
+      ctx.moveTo(-20,-8);ctx.lineTo(-45,-25);ctx.lineTo(-59,-22);
       ctx.stroke();
-      // 脚も縦シルエットを崩さない程度に展開
-      ctx.strokeStyle='#4b7d2a';ctx.lineWidth=5;
+
+      ctx.fillStyle='rgba(176,214,124,.72)';
       ctx.beginPath();
-      ctx.moveTo(-8,4);ctx.lineTo(-31,23);ctx.lineTo(-39,42);
-      ctx.moveTo(8,4);ctx.lineTo(31,23);ctx.lineTo(39,42);
-      ctx.moveTo(-7,25);ctx.lineTo(-25,48);
-      ctx.moveTo(7,25);ctx.lineTo(25,48);
+      ctx.ellipse(-55,22,12,5,.1,0,Math.PI*2);
+      ctx.ellipse(-55,-22,12,5,-.1,0,Math.PI*2);
+      ctx.fill();
+
+      // つやのある暗緑～黒の硬い羽。
+      ctx.fillStyle='#1f3525';
+      ctx.strokeStyle='#0e1a12';
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.ellipse(0,0,43,25,0,0,Math.PI*2);
+      ctx.fill();
       ctx.stroke();
-      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-7,-39,4.5,0,Math.PI*2);ctx.arc(7,-39,4.5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-7,-40,2.2,0,Math.PI*2);ctx.arc(7,-40,2.2,0,Math.PI*2);ctx.fill();
+
+      // 左右の上翅を中央線で分ける。
+      ctx.strokeStyle='rgba(118,160,86,.72)';
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.moveTo(-31,0);ctx.lineTo(29,0);
+      ctx.stroke();
+
+      // 背中の光沢。
+      ctx.fillStyle='rgba(123,171,88,.38)';
+      ctx.beginPath();
+      ctx.ellipse(-4,-8,27,7,-.08,0,Math.PI*2);
+      ctx.fill();
+
+      // 頭部。
+      ctx.fillStyle='#263d28';
+      ctx.beginPath();
+      ctx.ellipse(34,0,17,19,0,0,Math.PI*2);
+      ctx.fill();
+
+      // 目。
+      ctx.fillStyle='#d8e7bd';
+      ctx.beginPath();
+      ctx.arc(39,-8,4,0,Math.PI*2);
+      ctx.arc(39,8,4,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle='#0c130d';
+      ctx.beginPath();
+      ctx.arc(41,-8,2,0,Math.PI*2);
+      ctx.arc(41,8,2,0,Math.PI*2);
+      ctx.fill();
+
+      // 前脚。
+      ctx.strokeStyle='#304b24';
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.moveTo(23,-13);ctx.lineTo(38,-28);
+      ctx.moveTo(23,13);ctx.lineTo(38,28);
+      ctx.stroke();
+
+      // 突進中の短い水しぶき風ライン。
+      ctx.strokeStyle='rgba(210,245,255,.72)';
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.moveTo(-37,-31);ctx.lineTo(-60,-38);
+      ctx.moveTo(-40,31);ctx.lineTo(-63,39);
+      ctx.stroke();
+
       ctx.restore();
     });
-
 
     // カワズ隠し投げ：舌で相手をぐるぐる巻きにしていることを前面に表示。
     const pileOwner=(player&&player.specialType==='kawazuTonguePiledriver')?player:
