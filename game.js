@@ -91,17 +91,16 @@
   let comboTimer = 0;
   let comboHits = 0;
 
-  // Ground prototype physics. Up/down input remains available for command recognition,
-  // but movement itself is horizontal + gravity. Landing immediately triggers a frog jump.
+  // Lotus-stage physics. Frogs keep hopping on the giant lotus leaf.
+  // Up/down input remains available for command recognition; landing immediately rebounds.
   const LAND_GRAVITY = 1200;
   const LAND_AUTO_JUMP_SPEED = 880;
   const LAND_HORIZONTAL_DRAG = .22;
 
-  // Ground prototype 0.4: lower the soil again so the tall sky stays dominant.
-  // The guard button may protrude slightly above the soil; drawing and collision
-  // still share the exact same ground line.
+  // The lower area is now pond water with a giant lotus leaf floating on it.
+  // Collision uses the top surface of the leaf.
   function landGroundDepth(){
-    return Math.min(235, Math.max(145, innerHeight * .155));
+    return Math.min(220, Math.max(138, innerHeight * .148));
   }
   function landGroundTop(){
     return innerHeight - landGroundDepth();
@@ -132,7 +131,7 @@
     return window.innerWidth > window.innerHeight;
   }
 
-  // Ground prototype: portrait play is the default on every device.
+  // Lotus battle: portrait play is the default on every device.
   // Rotating the phone no longer starts or changes the game mode.
   let portraitPlayMode=true;
   document.body.classList.add('portrait-play');
@@ -742,7 +741,7 @@
     constructor(x, y, isPlayer, type='green') {
       const s = stats[type] || stats.green;
       this.x=x; this.y=y; this.vx=0; this.vy=0; this.isPlayer=isPlayer;
-      // 地上版ボス生物は常時空中型。
+      // 蓮の葉版ボス生物は常時空中型。
       // アザゼル（トンボ）は浮遊、ベリアル（クモ）は天井の糸からぶら下がる。
       if(type==='piranha') this.y=Math.min(this.y,innerHeight*.40);
       if(type==='crayfish') this.y=Math.min(this.y,innerHeight*.36);
@@ -1160,11 +1159,28 @@
       this.x=Math.max(45,Math.min(innerWidth-45,this.x));
       this.y=Math.max(minY,Math.min(maxY,this.y));
 
-      // Frog-style automatic jumping: no extra jump button and no conflict with
-      // command inputs that contain UP. A normal landing immediately launches again.
+      // 蓮の葉へ着地したカエルは、そのまま反射的に次のジャンプへ。
+      // 入力なし＝通常、↑を入れて着地＝高く、↓を入れて着地＝低く速く跳ねる。
       if(this.y>=maxY && !this.throwState && this.vy>=0 && this.type!=='piranha' && this.type!=='crayfish'){
         this.y=maxY;
-        this.vy=-LAND_AUTO_JUMP_SPEED;
+
+        let bounce=LAND_AUTO_JUMP_SPEED;
+        let landingY=0;
+        if(this.isPlayer){
+          landingY=input.y+(keys['s']?1:0)-(keys['w']?1:0);
+        }else{
+          // CPUは少しだけ跳躍高を変えて単調さを減らす。
+          landingY=(Math.random()<.14?-1:(Math.random()<.12?1:0));
+        }
+
+        if(landingY<-.45){
+          bounce=1045; // 高跳び
+        }else if(landingY>.45){
+          bounce=700;  // 低く速い跳ね
+          this.vx*=1.12;
+        }
+
+        this.vy=-bounce;
       }
 
       const other = this.isPlayer ? enemy : player;
@@ -1263,7 +1279,7 @@
 
         if(this.specialType==='piranhaRush'){
           const bite=(Math.sin(performance.now()/48)+1)*.5;
-          // v2.5: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
+          // v2.6: 以前の約1/4の見た目。実物寄りに黒い大顎＋視認用の黄色い縁。
           const reach=4.5+3.5*(1-bite);
           ctx.lineCap='round';
 
@@ -1768,7 +1784,7 @@
       }
 
       if(this.type==='yellow' && this.specialType==='raphaelBubbleMove'){
-        // 地上版エアブースト。泡の殻ではなく、身体の周囲に風の輪と流線を出す。
+        // 蓮の葉版エアブースト。泡の殻ではなく、身体の周囲に風の輪と流線を出す。
         // 高速移動中の飛び道具無効というゲーム上の性質は維持する。
         ctx.save();
         ctx.globalCompositeOperation='lighter';
@@ -2975,7 +2991,7 @@
     const other=f.isPlayer?enemy:player;
     if(!other) return false;
     f.specialType='catfishCall'; f.specialT=.65; f.attackT=.30;
-    // 地上版：リリスさんの背後側・画面最上部から出現し、
+    // 蓮の葉版：リリスさんの背後側・画面最上部から出現し、
     // カマと羽根を大きく広げた縦長姿勢のまま対角線へ急降下する。
     const attackDir=f.face;
     const behindX=f.x-attackDir*78;
@@ -3295,7 +3311,7 @@
     if(gameOver || !f || f.stun>0 || f.specialT>0 || f.bossSpecialCooldown>0) return false;
     f.guard=false; f.specialType='venomWater'; f.specialT=.68; f.bossSpecialCooldown=2.4;
 
-    // 地上版：真上＋左右の3方向へ噴水のようにいったん打ち上げてから落下。
+    // 蓮の葉版：真上＋左右の3方向へ噴水のようにいったん打ち上げてから落下。
     [
       {vx:-125,vy:-625},
       {vx:0,   vy:-690},
@@ -3561,7 +3577,7 @@
     f.raphaelMoveStartX=f.x;
     f.raphaelMoveStartY=f.y;
 
-    // 地上版エアブースト：最初は斜め後ろ上へ風を受け、
+    // 蓮の葉版エアブースト：最初は斜め後ろ上へ風を受け、
     // そこから前方の画面上端へ大きく回り込む。
     const dir=f.face;
     f.raphaelMoveControlX=f.x-dir*Math.min(180,innerWidth*.18);
@@ -3941,7 +3957,7 @@
       const forward=f.face>0?'right':'left';
       const downForward=f.face>0?'downRight':'downLeft';
 
-      // 地上版追加技：↓ ↑ ＋パンチで、風をまとい敵方向へ斜め上昇。
+      // 蓮の葉版追加技：↓ ↑ ＋パンチで、風をまとい敵方向へ斜め上昇。
       if(kind==='punch' && hasCommand(['down','up'],760)){
         clearCommand();
         return specialRaphaelWindRise(f);
@@ -4170,7 +4186,7 @@
         f.attack='belialPoisonSpit';
         f.attackT=.34;
 
-        // v2.5: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
+        // v2.6: 上空から使うことを前提に、横撃ちより斜め下へ落とす性格を強める。
         // 相手位置へ自動補正するが、最低でもしっかり下向き成分を持たせる。
         const dx=other.x-f.x;
         const dy=other.y-f.y;
@@ -4482,7 +4498,7 @@
           }
 
 
-          // ラファエルさん：地上版は「上＋ガード」で即エアブースト。
+          // ラファエルさん：蓮の葉版は「上＋ガード」で即エアブースト。
           // 縦画面では1回転入力の余裕が少ないため、空中機動を主力として簡略化。
           if(player.type==='yellow' && !player.throwState && input.y<-.35){
             if(specialRaphaelBubbleMove(player)){
@@ -4917,18 +4933,76 @@ function drawBackground(dt){
       ctx.fill();
     }
 
-    // Compact ground: controls remain inside the soil while preserving more sky.
-    // Collision uses landFloorY(), so the frogs stand on the same top edge we draw here.
+    // 池の水面＋巨大な蓮の葉。操作UIの下にも水が見える。
+    // 当たり判定は葉の上面（landFloorY）に合わせる。
     const groundTop=landGroundTop();
-    ctx.fillStyle=th.floor;
-    ctx.fillRect(0,groundTop,innerWidth,16);
-    ctx.fillStyle=th.soil;
-    ctx.fillRect(0,groundTop+16,innerWidth,innerHeight-groundTop-16);
+    const leafSurface=landFloorY()+55;
 
-    ctx.strokeStyle='rgba(42,104,48,.62)';ctx.lineWidth=3;ctx.lineCap='round';
-    for(let x=12;x<innerWidth;x+=34){
-      ctx.beginPath();ctx.moveTo(x,groundTop);ctx.lineTo(x-4,groundTop-13);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x+5,groundTop);ctx.lineTo(x+10,groundTop-9);ctx.stroke();
+    // 下部は池。空との境界に細い水面ハイライトを入れる。
+    const waterGrad=ctx.createLinearGradient(0,groundTop-26,0,innerHeight);
+    waterGrad.addColorStop(0,'rgba(94,190,210,.82)');
+    waterGrad.addColorStop(.38,'rgba(48,144,174,.94)');
+    waterGrad.addColorStop(1,'rgba(24,92,128,.98)');
+    ctx.fillStyle=waterGrad;
+    ctx.fillRect(0,groundTop-20,innerWidth,innerHeight-groundTop+20);
+
+    ctx.strokeStyle='rgba(220,250,255,.62)';
+    ctx.lineWidth=2;
+    for(let x=-20;x<innerWidth+30;x+=68){
+      const wobble=Math.sin(performance.now()/700+x*.03)*4;
+      ctx.beginPath();
+      ctx.moveTo(x,groundTop-11+wobble);
+      ctx.quadraticCurveTo(x+24,groundTop-17+wobble,x+48,groundTop-11+wobble);
+      ctx.stroke();
+    }
+
+    // 画面幅より少し大きい一枚の蓮の葉。中央の切れ込みも描く。
+    ctx.save();
+    ctx.translate(innerWidth*.50,groundTop-2);
+    ctx.fillStyle='#4e9f47';
+    ctx.strokeStyle='#2f7638';
+    ctx.lineWidth=5;
+    ctx.beginPath();
+    ctx.ellipse(0,0,innerWidth*.62,62,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 葉の明るい内側
+    ctx.fillStyle='rgba(119,190,83,.46)';
+    ctx.beginPath();
+    ctx.ellipse(-8,-6,innerWidth*.48,45,0,0,Math.PI*2);
+    ctx.fill();
+
+    // 中央の切れ込み
+    ctx.fillStyle='rgba(44,132,160,.88)';
+    ctx.beginPath();
+    ctx.moveTo(0,-3);
+    ctx.lineTo(34,-50);
+    ctx.lineTo(10,-7);
+    ctx.closePath();
+    ctx.fill();
+
+    // 葉脈
+    ctx.strokeStyle='rgba(37,111,47,.66)';
+    ctx.lineWidth=2;
+    for(let a=-2.75;a<=2.75;a+=.46){
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(a)*innerWidth*.48,Math.sin(a)*46);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 手前の水面に小さな蓮葉を数枚置き、池らしさを補強。
+    ctx.fillStyle='rgba(64,139,62,.72)';
+    for(const [px,py,rx,ry] of [
+      [innerWidth*.10,groundTop+72,34,12],
+      [innerWidth*.86,groundTop+52,29,10],
+      [innerWidth*.72,groundTop+118,22,8]
+    ]){
+      ctx.beginPath();
+      ctx.ellipse(px,py,rx,ry,0,0,Math.PI*2);
+      ctx.fill();
     }
   }
 
